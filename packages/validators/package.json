@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
+  "type": "module",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "lint": "eslint src --ext .ts"
   },
   "publishConfig": {
     "access": "public"
@@ -19,4 +23,3 @@
     "typescript": "^5.6.0"
   }
 }
-

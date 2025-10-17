@@ -1,3 +1,4 @@
+export * from './escapeHtml';
 export * from './isEmail';
-// export * from "./isString";
-// export * from "./isInRange";
+export * from './isInRange';
+export * from './isString';
