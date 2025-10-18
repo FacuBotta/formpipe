@@ -1,12 +1,20 @@
 {
-  "name": "@form/validators",
+  "name": "@formpipe/validators",
   "version": "0.1.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "type": "module",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "keywords": [
+    "validators",
+    "form",
+    "typescript",
+    "sanitization"
   ],
   "scripts": {
     "build": "tsup",
@@ -14,6 +22,7 @@
     "dev": "tsup --watch",
     "lint": "eslint src --ext .ts"
   },
+  "author": "Facundo Botta",
   "publishConfig": {
     "access": "public"
   },

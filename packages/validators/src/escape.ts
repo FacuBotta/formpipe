@@ -3,7 +3,7 @@
  * @param value The string to escape
  * @returns The escaped string
  */
-export function escapeHtml(value: string): string {
+export function escape(value: string): string {
   const htmlEntities: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',

@@ -1,0 +1,2 @@
+function o(t){let r={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return t.replace(/[&<>"']/g,n=>r[n])}var i=t=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);function p(t,r,n){if(typeof t!="string")return!1;let e=t.length;return e>=r&&e<=n}function f(t){return typeof t=="string"}export{o as escape,i as isEmail,p as isInRange,f as isString};
+//# sourceMappingURL=index.js.map
