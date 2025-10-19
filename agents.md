@@ -1,31 +1,25 @@
-🧩 Propósito del proyecto
+🧩 Project Purpose
 
-El repositorio form/ contiene un ecosistema modular de paquetes npm bajo el namespace @formpipe/\*.
-Su propósito es facilitar el manejo de formularios de contacto y envío de emails en entornos estáticos utilizando PHP (vía PHPMailer) como backend mínimo.
+The formpipe/ repository contains a modular ecosystem of npm packages under the @formpipe/\* namespace.
+Its purpose is to simplify handling contact forms and email sending in static environments using PHP (via PHPMailer) as a minimal backend.
 
-Los paquetes están organizados bajo una arquitectura Clean Architecture, con capas bien separadas de aplicación, dominio, infraestructura y presentación.
-El proyecto crecerá en módulos complementarios (validators, contact-form, cli, ui) para componer un entorno escalable y reutilizable.
+The packages are organized following a Clean Architecture, with well-separated layers for application, domain, infrastructure, and presentation.
+The project is designed to grow through complementary modules (validators, form with CLI, UI) to create a scalable and reusable environment.
 
-⚙️ Stack Tecnológico
+⚙️ Tech Stack
 
-Lenguaje: TypeScript
-
-Empaquetador: tsup
-
+Language: TypeScript
+Bundler: tsup
 Testing: Vitest
+Package manager: npm (workspaces)
+Architecture: Clean Architecture
+Publishing: npm registry (@formpipe/\*)
+Test backend environment: PHP + PHPMailer (inside @formpipe/form/php)
 
-Gestor de paquetes: npm (workspaces)
-
-Arquitectura: Clean Architecture
-
-Publicación: npm registry (@formpipe/\*)
-
-Entorno backend de prueba: PHP + PHPMailer (dentro de @formpipe/contact-form/php)
-
-📦 Estructura del Monorepo
+📦 Monorepo Structure
 form/
 ├── packages/
-│ ├── validators/ → Paquete de validaciones genéricas
+│ ├── validators/ → Generic validation package
 │ │ ├── src/
 │ │ │ ├── isEmail.ts
 │ │ │ ├── isString.ts
@@ -35,102 +29,93 @@ form/
 │ │ ├── tsup.config.ts
 │ │ └── package.json → name: "@formpipe/validators"
 │ │
-│ ├── contact-form/ → Paquete principal de manejo de formularios y envío
+│ ├── form/ → Main package for form handling and submission
 │ │ ├── src/
-│ │ │ ├── application/ → Casos de uso, lógica del envío
-│ │ │ ├── domain/ → Entidades y reglas de negocio
-│ │ │ ├── infrastructure/ → Servicios (PHP, PHPMailer, endpoints)
-│ │ │ └── presentation/ → Interfaces del front (configuración y submit)
-│ │ ├── php/ → Código PHP del endpoint
+│ │ │ ├── application/
+│ │ │ │ ├── use-cases/
+│ │ │ │ └── services/ → Use cases, sending logic
+│ │ │ ├── domain/ → Entities and business rules
+│ │ │ ├── presentation/ → Front-end interfaces (config and submit)
+│ │ │ └── cli/ → CLI tools (setup, build, test)
+│ │ │
+│ │ ├── php/ → Generated PHP code for the endpoint
 │ │ ├── tsup.config.ts
-│ │ └── package.json → name: "@formpipe/contact-form"
+│ │ └── package.json → name: "@formpipe/form"
 │ │
-│ ├── cli/ → Herramientas CLI (setup, build, test)
-│ │ ├── src/
-│ │ └── package.json → name: "@formpipe/cli"
-│ │
-│ └── ui/ → Componentes visuales (inputs, formularios)
+│ ├── ui/ → Visual components (inputs, forms)
 │ ├── src/
 │ └── package.json → name: "@formpipe/ui"
 │
-├── package.json → Configuración raíz + npm workspaces
-├── tsconfig.base.json → Configuración TypeScript base
-└── agents.md → Este archivo
+├── package.json → Root configuration + npm workspaces
+├── tsconfig.base.json → Base TypeScript configuration
+└── agents.md → This file
 
-🧠 Arquitectura (Clean Architecture)
+🧠 Architecture (Clean Architecture)
 
-Cada paquete sigue la separación de capas:
+Each package follows a layered separation:
 
-domain/ → Entidades, reglas de negocio, modelos.
-application/ → Casos de uso, coordinan la lógica del dominio.
-infrastructure/ → Implementaciones técnicas (PHP, red, persistencia).
-presentation/ → Interfaces públicas, adaptadores y vistas.
+domain/ → Entities, business rules, models
+application/ → Use cases, coordinates domain logic
+infrastructure/ → Technical implementations (PHP, network, persistence)
+presentation/ → Public interfaces, adapters, and views
 
-Dependencias permitidas:
+Allowed dependencies:
 
-presentation → puede depender de application
+presentation → may depend on application
+application → may depend on domain
+infrastructure → may depend on application or domain
+domain → must not depend on anything external
 
-application → puede depender de domain
+🧰 Available Commands (npm workspaces)
 
-infrastructure → puede depender de application o domain
+From the project root (/form):
 
-domain → no depende de nada externo
-
-🧰 Comandos disponibles (npm workspaces)
-
-Desde la raíz (/form):
-
-# Instalar dependencias de todos los paquetes
+# Install dependencies for all packages
 
 npm install
 
-# Compilar todos los paquetes
+# Build all packages
 
 npm run build --workspaces
 
-# Ejecutar tests en todos los paquetes
+# Run tests for all packages
 
 npm run test --workspaces
 
-# Limpiar artefactos de compilación
+# Clean build artifacts
 
 npm run clean --workspaces
 
-Desde un paquete específico (por ejemplo, validators):
+From a specific package (e.g., validators):
 
 cd packages/validators
 npm run build
 npm run test
 
-🧪 Ejemplo: uso de @formpipe/validators
+🧪 Example: Using @formpipe/validators
 import { isEmail, isString } from "@formpipe/validators";
 
-if (!isEmail(email)) throw new Error("Email inválido");
-if (!isString(subject)) throw new Error("Asunto inválido");
+if (!isEmail(email)) throw new Error("Invalid email");
+if (!isString(subject)) throw new Error("Invalid subject");
 
-🎨 Estilo de Código
+🎨 Code Style
 
-Indentación: 2 espacios
+Indentation: 2 spaces
+Semicolons: required at the end of every statement
+Imports: ordered by type (node, external libs, internal)
 
-Punto y coma: obligatorio al final de cada sentencia
+Naming conventions:
 
-Imports: ordenados por tipo (node, libs externas, internas)
+Element Style
+Classes & types PascalCase
+Functions & variables camelCase
+Global constants UPPER_SNAKE_CASE
 
-Nombres:
+Quotes: double " "
+Files: one main export per module
+Commit messages: conventional style (feat:, fix:, refactor:, test:)
 
-Clases y tipos: PascalCase
-
-Funciones y variables: camelCase
-
-Constantes globales: UPPER_SNAKE_CASE
-
-Comillas: dobles " "
-
-Archivos: una exportación principal por módulo
-
-Commit messages: estilo convencional (feat:, fix:, refactor:, test:)
-
-Ejemplo:
+Example:
 
 import { isEmail } from "@formpipe/validators";
 
@@ -138,11 +123,11 @@ export function validateEmail(value: string): boolean {
 return isEmail(value);
 }
 
-🧩 Publicación
+🧩 Publishing
 
-Cada paquete dentro de packages/\* se publica individualmente:
+Each package inside packages/\* is published individually:
 
 cd packages/validators
 npm publish --access public
 
-El package.json raíz tiene "private": true y no se publica.
+The root package.json has "private": true and is not published.
