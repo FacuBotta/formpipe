@@ -11,6 +11,13 @@
     "package.json",
     "LICENSE"
   ],
+  "description": "A collection of validators and sanitizers for form inputs in TypeScript.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FacuBotta/formpipe/tree/main/packages/validators",
+    "directory": "packages/validators"
+  },
+  "homepage": "https://www.npmjs.com/package/@formpipe/validators",
   "keywords": [
     "validators",
     "form",

@@ -3,6 +3,14 @@
   "name": "@formpipe/monorepo",
   "version": "0.1.1",
   "type": "module",
+  "description": "Monorepo containing form handling utilities and packages.",
+  "homepage": "https://www.npmjs.com/settings/formpipe/packages",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FacuBotta/formpipe/tree/main"
+  },
+  "author": "Facundo Botta",
+  "license": "MIT",
   "workspaces": [
     "packages/*"
   ],
