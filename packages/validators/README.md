@@ -146,4 +146,4 @@ You’re welcome to open issues or leave suggestions anyway!
 
 ## License
 
-[MIT License](https://github.com/facubotta/formpip/LICENSE)
+[MIT License](https://github.com/FacuBotta/formpipe/blob/main/LICENSE)

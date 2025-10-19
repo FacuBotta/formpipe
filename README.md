@@ -106,4 +106,4 @@ npm run test --workspaces
 
 ## 📜 License
 
-MIT
+[MIT License](https://github.com/FacuBotta/formpipe/blob/main/LICENSE)
