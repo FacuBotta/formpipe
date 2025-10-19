@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { sanitize } from '../src/sanitaze';
 
 describe('sanitize', () => {
+  it('should trim whitespace from the beginning and end', () => {
+    expect(sanitize('   Hello World   ')).toBe('Hello World');
+    expect(sanitize('<div>   Nested   </div>')).toBe('Nested');
+    expect(sanitize('<strong>   Bold   </strong>')).toBe('Bold');
+  });
   it('should remove HTML tags while keeping their content', () => {
     expect(sanitize('<p>Hello World</p>')).toBe('Hello World');
     expect(sanitize('<div><span>Nested</span> tags</div>')).toBe('Nested tags');

@@ -2,26 +2,7 @@
 
 A collection of validation tools
 
-### isInRange(value: string, min: number, max: number): boolean
-
-Checks if a string's length is within a specified range (inclusive).
-
-```typescript
-import { isInRange } from '@formpipe/validators';
-
-isInRange('hello', 3, 6); // true (5 characters, between 3 and 6)
-isInRange('hi', 3, 6); // false (2 characters, less than min)
-isInRange('greetings', 3, 6); // false (9 characters, more than max)
-isInRange('', 0, 5); // true (empty string allowed when min is 0)
-isInRange('👋🌍', 2, 5); // true (2 characters)
-```
-
-Handles:
-
-- Empty strings (valid when min=0)
-- Unicode characters and emojis
-- Special characters
-- Input validation (returns false for non-string inputs)ation utilities for form inputs and user-provided content.
+> This is a part of a set of tools to work with forms in js - Coming soon
 
 ## Installation
 
@@ -87,36 +68,25 @@ Handles:
 - Special characters
 - Input validation (returns false for non-string inputs)
 
-### sanitize(value: string): SanitizeResult
+### `sanitize(value: string): string`
 
-Sanitizes HTML input by removing all HTML tags and scripts while detecting potentially malicious code.
+Sanitizes HTML input by removing all HTML tags, scripts, and potentially dangerous attributes.  
+Returns the clean text, trimmed of whitespace at the start and end.
 
-Returns an object containing:
-
-- `text`: The sanitized text without any HTML
-- `warning`: A warning message if potentially malicious code was detected, null if input was clean
-
-```typescript
+````typescript
 import { sanitize } from '@formpipe/validators';
 
 // Clean input
 sanitize('<p>Hello World</p>');
-// { text: "Hello World", warning: null }
+// "Hello World"
 
 // Malicious input
 sanitize('<script>alert("XSS")</script>Hello');
-// {
-//   text: "Hello",
-//   warning: "Potential malicious code detected and removed"
-// }
+// "Hello"
 
 // With event handlers
-sanitize('<div onclick="evil()">Click me</div>');
-// {
-//   text: "Click me",
-//   warning: "Potential malicious code detected and removed"
-// }
-```
+sanitize('<div onclick="evil()">Click me </div>');
+// "Click me"
 
 Detects and removes:
 
@@ -138,7 +108,7 @@ escapeHtml('<p>Hello & World</p>');
 
 escapeHtml('Quote "test" & <tags>');
 // "Quote &quot;test&quot; &amp; &lt;tags&gt;"
-```
+````
 
 Escapes the following characters:
 
@@ -171,8 +141,9 @@ The `sanitize` function is designed to remove potentially malicious content but 
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
+Contributions are currently closed while the monorepo structure and core architecture are being developed.
+You’re welcome to open issues or leave suggestions anyway!
 
 ## License
 
-MIT
+[MIT License](https://github.com/facubotta/formpip/LICENSE)

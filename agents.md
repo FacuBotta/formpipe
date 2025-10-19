@@ -1,6 +1,6 @@
 🧩 Propósito del proyecto
 
-El repositorio form/ contiene un ecosistema modular de paquetes npm bajo el namespace @form/\*.
+El repositorio form/ contiene un ecosistema modular de paquetes npm bajo el namespace @formpipe/\*.
 Su propósito es facilitar el manejo de formularios de contacto y envío de emails en entornos estáticos utilizando PHP (vía PHPMailer) como backend mínimo.
 
 Los paquetes están organizados bajo una arquitectura Clean Architecture, con capas bien separadas de aplicación, dominio, infraestructura y presentación.
@@ -18,9 +18,9 @@ Gestor de paquetes: npm (workspaces)
 
 Arquitectura: Clean Architecture
 
-Publicación: npm registry (@form/\*)
+Publicación: npm registry (@formpipe/\*)
 
-Entorno backend de prueba: PHP + PHPMailer (dentro de @form/contact-form/php)
+Entorno backend de prueba: PHP + PHPMailer (dentro de @formpipe/contact-form/php)
 
 📦 Estructura del Monorepo
 form/
@@ -33,7 +33,7 @@ form/
 │ │ ├── tests/
 │ │ │ └── isEmail.test.ts
 │ │ ├── tsup.config.ts
-│ │ └── package.json → name: "@form/validators"
+│ │ └── package.json → name: "@formpipe/validators"
 │ │
 │ ├── contact-form/ → Paquete principal de manejo de formularios y envío
 │ │ ├── src/
@@ -43,15 +43,15 @@ form/
 │ │ │ └── presentation/ → Interfaces del front (configuración y submit)
 │ │ ├── php/ → Código PHP del endpoint
 │ │ ├── tsup.config.ts
-│ │ └── package.json → name: "@form/contact-form"
+│ │ └── package.json → name: "@formpipe/contact-form"
 │ │
 │ ├── cli/ → Herramientas CLI (setup, build, test)
 │ │ ├── src/
-│ │ └── package.json → name: "@form/cli"
+│ │ └── package.json → name: "@formpipe/cli"
 │ │
 │ └── ui/ → Componentes visuales (inputs, formularios)
 │ ├── src/
-│ └── package.json → name: "@form/ui"
+│ └── package.json → name: "@formpipe/ui"
 │
 ├── package.json → Configuración raíz + npm workspaces
 ├── tsconfig.base.json → Configuración TypeScript base
@@ -102,8 +102,8 @@ cd packages/validators
 npm run build
 npm run test
 
-🧪 Ejemplo: uso de @form/validators
-import { isEmail, isString } from "@form/validators";
+🧪 Ejemplo: uso de @formpipe/validators
+import { isEmail, isString } from "@formpipe/validators";
 
 if (!isEmail(email)) throw new Error("Email inválido");
 if (!isString(subject)) throw new Error("Asunto inválido");
@@ -132,7 +132,7 @@ Commit messages: estilo convencional (feat:, fix:, refactor:, test:)
 
 Ejemplo:
 
-import { isEmail } from "@form/validators";
+import { isEmail } from "@formpipe/validators";
 
 export function validateEmail(value: string): boolean {
 return isEmail(value);

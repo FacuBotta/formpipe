@@ -6,14 +6,14 @@ A modular ecosystem of npm packages for handling contact forms and email sending
 
 ## 🎯 Purpose
 
-The `@form/*` packages provide a clean and modular approach to handle contact forms in static websites. It follows Clean Architecture principles to ensure maintainability, testability, and separation of concerns.
+The `@formpipe/*` packages provide a clean and modular approach to handle contact forms in static websites. It follows Clean Architecture principles to ensure maintainability, testability, and separation of concerns.
 
 ## 📦 Packages
 
-- `@form/validators` - Generic validation utilities
-- `@form/contact-form` - Main form handling and email sending functionality
-- `@form/cli` - CLI tools for setup, build, and testing
-- `@form/ui` - Visual components (inputs, forms)
+- `@formpipe/validators` - Generic validation utilities
+- `@formpipe/contact-form` - Main form handling and email sending functionality
+- `@formpipe/cli` - CLI tools for setup, build, and testing
+- `@formpipe/ui` - Visual components (inputs, forms)
 
 ## 🏗️ Project Structure
 
@@ -37,7 +37,7 @@ form/
 - Testing: Vitest
 - Package Manager: npm (workspaces)
 - Architecture: Clean Architecture
-- Backend: PHP + PHPMailer (included in @form/contact-form/php)
+- Backend: PHP + PHPMailer (included in @formpipe/contact-form/php)
 
 ## 🧱 Architecture
 
@@ -60,13 +60,13 @@ The project follows Clean Architecture principles with clear layer separation:
 ### Installation
 
 ```bash
-npm install @form/validators @form/contact-form
+npm install @formpipe/validators @formpipe/contact-form
 ```
 
 ### Basic Usage
 
 ```typescript
-import { isEmail, isString } from '@form/validators';
+import { isEmail, isString } from '@formpipe/validators';
 
 if (!isEmail(email)) throw new Error('Invalid email');
 if (!isString(subject)) throw new Error('Invalid subject');
