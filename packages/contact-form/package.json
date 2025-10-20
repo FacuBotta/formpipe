@@ -1,0 +1,63 @@
+{
+  "name": "@formpipe/contact-form",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./cli": {
+      "import": "./dist/cli/src/index.js",
+      "require": "./dist/cli/src/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json",
+    "LICENSE"
+  ],
+  "description": "A collection of validators and sanitizers for form inputs in TypeScript.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FacuBotta/formpipe/tree/main/packages/contact-form",
+    "directory": "packages/contact-form"
+  },
+  "homepage": "https://www.npmjs.com/package/@formpipe/contact-form",
+  "keywords": [
+    "validators",
+    "form",
+    "contact",
+    "emails",
+    "typescript",
+    "sanitization"
+  ],
+  "bin": {
+    "formpipe": "./dist/cli/src/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "dev": "tsup --watch",
+    "lint": "eslint src --ext .ts"
+  },
+  "author": "Facundo Botta",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "@formpipe/validators": "^0.1.3"
+  }
+}

@@ -14,7 +14,7 @@ Testing: Vitest
 Package manager: npm (workspaces)
 Architecture: Clean Architecture
 Publishing: npm registry (@formpipe/\*)
-Test backend environment: PHP + PHPMailer (inside @formpipe/form/php)
+Test backend environment: PHP + PHPMailer (inside @formpipe/contactForm/php)
 
 📦 Monorepo Structure
 form/
@@ -29,7 +29,7 @@ form/
 │ │ ├── tsup.config.ts
 │ │ └── package.json → name: "@formpipe/validators"
 │ │
-│ ├── form/ → Main package for form handling and submission
+│ ├── contactForm/ → Main package for form handling and submission
 │ │ ├── src/
 │ │ │ ├── application/
 │ │ │ │ ├── use-cases/
@@ -40,7 +40,7 @@ form/
 │ │ │
 │ │ ├── php/ → Generated PHP code for the endpoint
 │ │ ├── tsup.config.ts
-│ │ └── package.json → name: "@formpipe/form"
+│ │ └── package.json → name: "@formpipe/contact-form"
 │ │
 │ ├── ui/ → Visual components (inputs, forms)
 │ ├── src/

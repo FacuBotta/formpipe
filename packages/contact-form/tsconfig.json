@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@formpipe/validators": ["../validators/src/index.ts"]
+    },
+    "allowImportingTsExtensions": false,
+    "noEmit": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}
