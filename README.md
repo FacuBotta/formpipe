@@ -12,8 +12,6 @@ The `@formpipe/*` packages provide a clean and modular approach to handle contac
 
 - [`@formpipe/validators`](https://github.com/FacuBotta/formpipe/tree/main/packages/validators) - Generic validation utilities
 - [`@formpipe/contact-form`](https://github.com/FacuBotta/formpipe/tree/main/packages/contact-form) - Main form handling and email sending functionality
-- `@formpipe/cli` - CLI tools for setup, build, and testing
-- `@formpipe/ui` - Visual components (inputs, forms)
 
 ## 🏗️ Project Structure
 
