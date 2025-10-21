@@ -1,49 +1,90 @@
 import { isEmail, isInRange, isString } from '@formpipe/validators';
-import { FormConfig } from '../../domain/entities/FormConfig';
+import { FormData, FormError, FormRules } from 'src/domain/types';
 
 export class FormValidator {
-  constructor(private config: FormConfig) {}
+  // eslint-disable-next-line no-unused-vars
+  constructor(private rules: FormRules) {}
 
-  validate(data: { replyTo: string; subject: string; message: string }) {
-    const errors: string[] = [];
+  validate(data: FormData): FormError[] {
+    const errors: FormError[] = [];
 
-    // Required fields
-    if (!data.replyTo) errors.push('Email is required');
-    if (this.config.rules.subject.required && !data.subject)
-      errors.push('Subject is required');
-    if (this.config.rules.message.required && !data.message)
-      errors.push('Message is required');
+    // Validar campos requeridos primero
+    if (!data.replyTo || data.replyTo.trim() === '') {
+      errors.push({
+        message: 'Email is required',
+        input: { replyTo: data.replyTo },
+      });
+    }
 
-    // Validations using @formpipe/validators methods
-
-    // Email
-    if (!isEmail(data.replyTo)) errors.push('Invalid email address');
-
-    // Subject
-    if (!isString(data.subject)) errors.push('Invalid subject');
     if (
-      !isInRange(
-        data.subject,
-        this.config.rules.subject.minLength,
-        this.config.rules.subject.maxLength
-      )
-    )
-      errors.push(
-        `Subject must be between ${this.config.rules.subject.minLength}-${this.config.rules.subject.maxLength} characters`
-      );
+      this.rules.subject.required &&
+      (!data.subject || data.subject.trim() === '')
+    ) {
+      errors.push({
+        message: 'Subject is required',
+        input: { subject: data.subject },
+      });
+    }
 
-    // Message
-    if (!isString(data.message)) errors.push('Invalid message');
     if (
-      !isInRange(
-        data.message,
-        this.config.rules.message.minLength,
-        this.config.rules.message.maxLength
-      )
-    )
-      errors.push(
-        `Message must be between ${this.config.rules.message.minLength}-${this.config.rules.message.maxLength} characters`
-      );
+      this.rules.message.required &&
+      (!data.message || data.message.trim() === '')
+    ) {
+      errors.push({
+        message: 'Message is required',
+        input: { message: data.message },
+      });
+    }
+
+    // Validaciones de formato y longitud solo si el campo tiene contenido
+    if (data.replyTo && data.replyTo.trim() !== '') {
+      if (!isEmail(data.replyTo)) {
+        errors.push({
+          message: 'Invalid email address',
+          input: { replyTo: data.replyTo },
+        });
+      }
+    }
+
+    if (data.subject && data.subject.trim() !== '') {
+      if (!isString(data.subject)) {
+        errors.push({
+          message: 'Invalid subject',
+          input: { subject: data.subject },
+        });
+      } else if (
+        !isInRange(
+          data.subject,
+          this.rules.subject.minLength,
+          this.rules.subject.maxLength
+        )
+      ) {
+        errors.push({
+          message: `Subject must be between ${this.rules.subject.minLength} and ${this.rules.subject.maxLength} characters`,
+          input: { subject: data.subject },
+        });
+      }
+    }
+
+    if (data.message && data.message.trim() !== '') {
+      if (!isString(data.message)) {
+        errors.push({
+          message: 'Invalid message',
+          input: { message: data.message },
+        });
+      } else if (
+        !isInRange(
+          data.message,
+          this.rules.message.minLength,
+          this.rules.message.maxLength
+        )
+      ) {
+        errors.push({
+          message: `Message must be between ${this.rules.message.minLength} and ${this.rules.message.maxLength} characters`,
+          input: { message: data.message },
+        });
+      }
+    }
 
     return errors;
   }

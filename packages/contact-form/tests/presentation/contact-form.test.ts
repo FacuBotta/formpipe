@@ -1,0 +1,264 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { FormConfig } from '../../src/domain/entities/FormConfig';
+import { FormData, SubmitProps } from '../../src/domain/types';
+import { contactForm } from '../../src/presentation/contactForm';
+
+const mockLocalStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+
+Object.defineProperty(global, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true,
+});
+
+vi.mock('../../src/domain/entities/FormConfig', async () => {
+  const actual = await vi.importActual('../../src/domain/entities/FormConfig');
+  return {
+    ...actual,
+    loadConfig: vi.fn(),
+  };
+});
+
+const mockConfig: FormConfig = {
+  smtp: {
+    host: 'smtp.example.com',
+    port: 587,
+    user: 'user',
+    pass: 'pass',
+  },
+  baseURL: 'http://example.com',
+  from: '<from@example.com>',
+  to: '<to@example.com>',
+  rules: {
+    replyTo: { minLength: 5, maxLength: 50, required: true },
+    subject: { minLength: 5, maxLength: 100, required: true },
+    message: { minLength: 10, maxLength: 1000, required: true },
+  },
+  sendConfirmation: false,
+};
+
+const validFormData: FormData = {
+  replyTo: 'test@example.com',
+  subject: 'Test Subject',
+  message: 'This is a test message',
+};
+
+const invalidFormData: FormData = {
+  replyTo: 'invalid-email',
+  subject: 'S',
+  message: 'Short',
+};
+
+describe('contactForm', () => {
+  let form: contactForm;
+  let mockFetch: typeof fetch;
+
+  beforeEach(async () => {
+    const { loadConfig } = await import('../../src/domain/entities/FormConfig');
+    vi.mocked(loadConfig).mockReturnValue(mockConfig);
+
+    form = new contactForm();
+    mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    Object.defineProperty(form, 'formpipeConfig', {
+      value: mockConfig,
+      writable: true,
+    });
+
+    Object.defineProperty(form, 'validator', {
+      value: {
+        validate: vi.fn(),
+      },
+      writable: true,
+    });
+
+    Object.defineProperty(form, 'submitter', {
+      value: {
+        submitForm: vi.fn(),
+      },
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    mockLocalStorage.clear();
+  });
+
+  describe('submit method', () => {
+    it('should return error when validation fails', async () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+      validator.validate = vi.fn().mockReturnValue([
+        {
+          message: 'Invalid email address',
+          input: { replyTo: 'invalid-email' },
+        },
+        {
+          message: 'Subject must be between 5 and 100 characters',
+          input: { subject: 'S' },
+        },
+        {
+          message: 'Message must be between 10 and 1000 characters',
+          input: { message: 'Short' },
+        },
+      ]);
+
+      const submitProps: SubmitProps = {
+        ...invalidFormData,
+        options: { persistData: false },
+      };
+
+      const result = await form.submit(submitProps);
+
+      expect(result).toEqual({
+        error: {
+          message: {
+            message: 'Invalid email address',
+            input: { replyTo: 'invalid-email' },
+          },
+          status: 400,
+          all: [
+            {
+              message: 'Invalid email address',
+              input: { replyTo: 'invalid-email' },
+            },
+            {
+              message: 'Subject must be between 5 and 100 characters',
+              input: { subject: 'S' },
+            },
+            {
+              message: 'Message must be between 10 and 1000 characters',
+              input: { message: 'Short' },
+            },
+          ],
+        },
+      });
+    });
+
+    it('should submit successfully when validation passes', async () => {
+      const validator = form['validator'];
+      const submitter = form['submitter'];
+
+      if (!validator) throw new Error('Validator not found');
+      if (!submitter) throw new Error('Submitter not found');
+      validator.validate = vi.fn().mockReturnValue([]);
+      submitter.submitForm = vi
+        .fn()
+        .mockResolvedValue({ ok: true, data: 'success' });
+
+      const submitProps: SubmitProps = {
+        ...validFormData,
+        options: { persistData: false },
+      };
+
+      const result = await form.submit(submitProps);
+
+      expect(result).toEqual({
+        success: true,
+        data: { ok: true, data: 'success' },
+      });
+      expect(submitter.submitForm).toHaveBeenCalledWith({
+        replyTo: validFormData.replyTo,
+        subject: validFormData.subject,
+        message: validFormData.message,
+        url: mockConfig.baseURL,
+      });
+    });
+
+    it('should persist data to localStorage when persistData option is true', async () => {
+      const validator = form['validator'];
+      const submitter = form['submitter'];
+
+      if (!validator) throw new Error('Validator not found');
+      if (!submitter) throw new Error('Submitter not found');
+      validator.validate = vi.fn().mockReturnValue([]);
+      submitter.submitForm = vi.fn().mockResolvedValue({ ok: true });
+
+      const submitProps: SubmitProps = {
+        ...validFormData,
+        options: { persistData: true },
+      };
+
+      await form.submit(submitProps);
+
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'formpipe-contact-form',
+        JSON.stringify({
+          replyTo: validFormData.replyTo,
+          subject: validFormData.subject,
+          message: validFormData.message,
+        })
+      );
+    });
+
+    it('should clear localStorage on successful submission when persistData is enabled', async () => {
+      const validator = form['validator'];
+      const submitter = form['submitter'];
+
+      if (!validator) throw new Error('Validator not found');
+      if (!submitter) throw new Error('Submitter not found');
+      validator.validate = vi.fn().mockReturnValue([]);
+      submitter.submitForm = vi.fn().mockResolvedValue({ ok: true });
+
+      mockLocalStorage.setItem.mockImplementation(() => {});
+
+      const submitProps: SubmitProps = {
+        ...validFormData,
+        options: { persistData: true },
+      };
+
+      await form.submit(submitProps);
+
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        'formpipe-contact-form'
+      );
+    });
+
+    it('should return connection error when submitter throws an error', async () => {
+      const validator = form['validator'];
+      const submitter = form['submitter'];
+
+      if (!validator) throw new Error('Validator not found');
+      if (!submitter) throw new Error('Submitter not found');
+      validator.validate = vi.fn().mockReturnValue([]);
+      submitter.submitForm = vi
+        .fn()
+        .mockRejectedValue(new Error('Network error'));
+
+      const submitProps: SubmitProps = {
+        ...validFormData,
+        options: { persistData: false },
+      };
+
+      const result = await form.submit(submitProps);
+
+      expect(result).toEqual({
+        error: {
+          message: 'Connection error',
+          status: 500,
+          details: new Error('Network error'),
+        },
+      });
+    });
+
+    it('should throw error when no config is set up', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(form as any, 'formpipeConfig', 'get').mockReturnValue(undefined);
+
+      const submitProps: SubmitProps = {
+        ...validFormData,
+        options: { persistData: false },
+      };
+
+      await expect(form.submit(submitProps)).rejects.toThrow(
+        'No config() set up yet'
+      );
+    });
+  });
+});
