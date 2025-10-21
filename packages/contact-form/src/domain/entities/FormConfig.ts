@@ -1,14 +1,11 @@
 import { readFileSync } from 'fs';
+import { FormRules } from '../types';
 
 interface SendConfirmation {
   message: string;
   htmlTemplate?: string;
 }
-interface FormRules {
-  minLength: number;
-  maxLength: number;
-  required?: boolean;
-}
+
 export interface FormConfig {
   smtp: {
     host: string;
@@ -19,11 +16,7 @@ export interface FormConfig {
   baseURL: string;
   from: string;
   to: string;
-  rules: {
-    subject: FormRules;
-    message: FormRules;
-  };
-  persistData: boolean;
+  rules: FormRules;
   sendConfirmation: SendConfirmation | false;
   rateLimit?: number;
 }

@@ -1,3 +1,4 @@
+import { FormData, FormError, SubmitProps } from 'src/domain/types';
 import { FormSubmitter } from '../application/services/FormSubmitter';
 import { FormValidator } from '../application/services/FormValidator';
 import { FormConfig, loadConfig } from '../domain/entities/FormConfig';
@@ -9,11 +10,34 @@ export class contactForm {
 
   private localStorageKey = 'formpipe-contact-form';
 
-  async submit(data: { replyTo: string; subject: string; message: string }) {
+  constructor() {
+    if (this.formpipeConfig) {
+      this.validator = new FormValidator(this.formpipeConfig.rules);
+      this.submitter = new FormSubmitter();
+    } else {
+      throw new Error('No config() set up yet');
+    }
+  }
+
+  validate(data: FormData): FormError[] {
+    if (!this.validator) {
+      throw new Error('No validator set up yet');
+    }
+    return this.validator.validate(data);
+  }
+
+  async submit(data: SubmitProps) {
     if (!this.formpipeConfig) throw new Error('No config() set up yet');
 
-    if (this.formpipeConfig.persistData) {
-      localStorage.setItem(this.localStorageKey, JSON.stringify(data));
+    if (data.options?.persistData) {
+      localStorage.setItem(
+        this.localStorageKey,
+        JSON.stringify({
+          replyTo: data.replyTo,
+          subject: data.subject,
+          message: data.message,
+        })
+      );
     }
 
     try {
@@ -22,22 +46,19 @@ export class contactForm {
         return { error: { message: errors[0], status: 400, all: errors } };
       }
 
-      const response = { ok: true }; // Mocked response
-      const result = { message: 'Form submitted successfully' };
-
-      //TODO: Implements sendEmail service
-      this.submitter?.submitForm({
+      //TODO: Implements sendEmail service properly
+      const response = await this.submitter?.submitForm({
         replyTo: data.replyTo,
         subject: data.subject,
         message: data.message,
         url: this.formpipeConfig.baseURL,
       });
       // Clear storage on success
-      if (response.ok && this.formpipeConfig.persistData) {
+      if (response?.ok && data.options?.persistData) {
         localStorage.removeItem(this.localStorageKey);
       }
 
-      return { success: true, data: result };
+      return { success: true, data: response };
     } catch (error) {
       return {
         error: {
@@ -55,11 +76,9 @@ export class contactForm {
     return false;
   }
 
-  loadFromStorage() {
-    if (this.formpipeConfig?.persistData) {
-      const saved = localStorage.getItem(this.localStorageKey);
-      if (saved) return JSON.parse(saved);
-    }
+  loadFromStorage(): FormData | null {
+    const saved = localStorage.getItem(this.localStorageKey);
+    if (saved) return JSON.parse(saved);
     return null;
   }
 }

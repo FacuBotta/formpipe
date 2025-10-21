@@ -1,27 +1,42 @@
-interface SubmitterProps {
-  replyTo: string;
-  subject: string;
-  message: string;
+import { FormData } from 'src/domain/types';
+
+interface SubmitterProps extends FormData {
   url: string;
 }
 
 export class FormSubmitter {
   async submitForm(data: SubmitterProps): Promise<Response> {
-    const url = data.url;
+    if (!data.url) {
+      throw new Error('No URL provided for form submission');
+    }
+
+    if (!data.replyTo || !data.subject || !data.message) {
+      throw new Error('Missing required form fields');
+    }
 
     try {
-      if (!url) throw new Error('No URL provided for form submission');
-      const response = fetch(url, {
+      const response = await fetch(data.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          replyTo: data.replyTo,
+          subject: data.subject,
+          message: data.message,
+        }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       return response;
-    } catch (error) {
-      throw new Error('Submission failed', { cause: error });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Unknown error occurred during form submission');
     }
   }
 }
