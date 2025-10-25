@@ -183,7 +183,7 @@ describe('ContactForm', () => {
       expect(result).toEqual({
         success: false,
         status: 500,
-        error: {
+        errors: {
           type: 'system',
           message:
             'Form validator not initialized. make sure you run npx formpipe init first',
@@ -215,7 +215,7 @@ describe('ContactForm', () => {
       expect(result).toEqual({
         success: false,
         status: 400,
-        error: validationErrors,
+        errors: validationErrors,
         rules: mockRules,
       });
     });
@@ -286,7 +286,7 @@ describe('ContactForm', () => {
       expect(result).toEqual({
         success: false,
         status: 400,
-        error: [
+        errors: [
           {
             message: 'Message too short',
             field: 'message',
@@ -318,7 +318,7 @@ describe('ContactForm', () => {
           field: 'subject',
           value: 'S',
           type: 'validation',
-          constraints: {
+          rules: {
             minLength: 5,
             maxLength: 100,
           },
@@ -328,7 +328,7 @@ describe('ContactForm', () => {
           field: 'message',
           value: 'Short',
           type: 'validation',
-          constraints: {
+          rules: {
             minLength: 10,
             maxLength: 1000,
           },
@@ -349,11 +349,11 @@ describe('ContactForm', () => {
       expect(result).toEqual({
         success: false,
         status: 400,
-        error: expect.arrayContaining(validationErrors),
+        errors: expect.arrayContaining(validationErrors),
         rules: mockRules,
       });
-      expect(result.error).toHaveLength(validationErrors.length);
-    }); // 👈 ← ESTA LLAVE Y PARÉNTESIS FALTABAN AQUÍ
+      expect(result.errors).toHaveLength(validationErrors.length);
+    });
 
     it('should submit successfully when validation passes', async () => {
       const validator = form['validator'];
@@ -472,7 +472,7 @@ describe('ContactForm', () => {
       expect(result).toEqual({
         success: false,
         status: 500,
-        error: {
+        errors: {
           type: 'system',
           message: 'Failed to submit form',
           details: new Error('Network error'),
@@ -495,7 +495,7 @@ describe('ContactForm', () => {
       expect(result).toEqual({
         success: false,
         status: 500,
-        error: {
+        errors: {
           type: 'system',
           message:
             'No config() set up yet, make sure you run npx formpipe init first',

@@ -18,11 +18,11 @@ export interface InputRules {
 
 export type ValidationConstraints = Partial<InputRules>;
 
-export type FormRules = {
+export type ValidatorConstraints = {
   [K in keyof FormFields]: InputRules;
 };
 
-export type Rules = {
+export type FormRules = {
   [K in keyof FormFields]?: ValidationConstraints;
 };
 
@@ -42,7 +42,7 @@ export interface ValidationError {
   field: keyof FormFields;
   value: string;
   type: 'validation';
-  constraints?: ValidationConstraints;
+  rules?: ValidationConstraints;
 }
 
 export interface SystemError {
@@ -57,6 +57,6 @@ export interface FormResponse {
   success: boolean;
   data?: FormData;
   status: number;
-  error?: FormError | FormError[];
+  errors?: FormError | FormError[];
   rules?: FormRules;
 }
