@@ -10,6 +10,9 @@ export interface InputRules {
   required?: boolean;
 }
 
+// Tipo parcial para constraints en errores de validación
+export type ValidationConstraints = Partial<InputRules>;
+
 export interface FormRules {
   replyTo: InputRules;
   subject: InputRules;
@@ -24,8 +27,25 @@ export interface SubmitProps extends FormData {
   options?: SubmitOptions;
 }
 
-export interface FormError {
+export interface ValidationError {
   message: string;
-  input: Partial<FormData>;
-  status?: number;
+  field: keyof FormData;
+  value: string;
+  type: 'validation';
+  constraints?: ValidationConstraints;
+}
+
+export interface SystemError {
+  message: string;
+  type: 'system';
+  details?: unknown;
+}
+
+export type FormError = ValidationError | SystemError;
+
+export interface FormResponse {
+  success: boolean;
+  data?: FormData;
+  status: number;
+  error?: FormError | FormError[];
 }

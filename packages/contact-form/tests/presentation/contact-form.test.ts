@@ -94,20 +94,37 @@ describe('contactForm', () => {
     it('should return error when validation fails', async () => {
       const validator = form['validator'];
       if (!validator) throw new Error('Validator not found');
-      validator.validate = vi.fn().mockReturnValue([
+
+      const validationErrors = [
         {
           message: 'Invalid email address',
-          input: { replyTo: 'invalid-email' },
+          field: 'replyTo',
+          value: 'invalid-email',
+          type: 'validation',
         },
         {
           message: 'Subject must be between 5 and 100 characters',
-          input: { subject: 'S' },
+          field: 'subject',
+          value: 'S',
+          type: 'validation',
+          constraints: {
+            minLength: 5,
+            maxLength: 100,
+          },
         },
         {
           message: 'Message must be between 10 and 1000 characters',
-          input: { message: 'Short' },
+          field: 'message',
+          value: 'Short',
+          type: 'validation',
+          constraints: {
+            minLength: 10,
+            maxLength: 1000,
+          },
         },
-      ]);
+      ];
+
+      validator.validate = vi.fn().mockReturnValue(validationErrors);
 
       const submitProps: SubmitProps = {
         ...invalidFormData,
@@ -117,29 +134,12 @@ describe('contactForm', () => {
       const result = await form.submit(submitProps);
 
       expect(result).toEqual({
-        error: {
-          message: {
-            message: 'Invalid email address',
-            input: { replyTo: 'invalid-email' },
-          },
-          status: 400,
-          all: [
-            {
-              message: 'Invalid email address',
-              input: { replyTo: 'invalid-email' },
-            },
-            {
-              message: 'Subject must be between 5 and 100 characters',
-              input: { subject: 'S' },
-            },
-            {
-              message: 'Message must be between 10 and 1000 characters',
-              input: { message: 'Short' },
-            },
-          ],
-        },
+        success: false,
+        status: 400,
+        error: expect.arrayContaining(validationErrors),
       });
-    });
+      expect(result.error).toHaveLength(validationErrors.length);
+    }); // 👈 ← ESTA LLAVE Y PARÉNTESIS FALTABAN AQUÍ
 
     it('should submit successfully when validation passes', async () => {
       const validator = form['validator'];
@@ -161,7 +161,13 @@ describe('contactForm', () => {
 
       expect(result).toEqual({
         success: true,
-        data: { ok: true, data: 'success' },
+        status: 200,
+        data: {
+          replyTo: validFormData.replyTo,
+          subject: validFormData.subject,
+          message: validFormData.message,
+          options: { persistData: false },
+        },
       });
       expect(submitter.submitForm).toHaveBeenCalledWith({
         replyTo: validFormData.replyTo,
@@ -239,9 +245,11 @@ describe('contactForm', () => {
       const result = await form.submit(submitProps);
 
       expect(result).toEqual({
+        success: false,
+        status: 500,
         error: {
-          message: 'Connection error',
-          status: 500,
+          type: 'system',
+          message: 'Failed to submit form',
           details: new Error('Network error'),
         },
       });
@@ -256,9 +264,17 @@ describe('contactForm', () => {
         options: { persistData: false },
       };
 
-      await expect(form.submit(submitProps)).rejects.toThrow(
-        'No config() set up yet'
-      );
+      const result = await form.submit(submitProps);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        error: {
+          type: 'system',
+          message:
+            'No config() set up yet, make sure you run npx formpipe init first',
+        },
+      });
     });
   });
 });
