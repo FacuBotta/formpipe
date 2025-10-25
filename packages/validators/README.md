@@ -2,8 +2,6 @@
 
 A collection of validation tools
 
-> This is a part of a set of tools to work with forms in js - Coming soon
-
 ## Installation
 
 ```bash
@@ -12,17 +10,6 @@ npm install @formpipe/validators
 
 ## Usage
 
-```typescript
-import {
-  isEmail,
-  isString,
-  isInRange,
-  sanitize,
-  escapeHtml,
-} from '@formpipe/validators';
-```
-
-## API Reference
 
 ### isEmail(value: unknown): boolean
 
@@ -129,15 +116,6 @@ if (isString(value)) {
   console.log(value.toUpperCase());
 }
 ```
-
-## Security Considerations
-
-The `sanitize` function is designed to remove potentially malicious content but should not be the only line of defense in your application. Always implement proper security measures at multiple levels:
-
-- Input validation
-- Content Security Policy (CSP)
-- Output encoding
-- XSS protection headers
 
 ## Contributing
 
