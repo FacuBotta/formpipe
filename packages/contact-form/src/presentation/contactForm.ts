@@ -3,8 +3,8 @@ import {
   FormFields,
   FormResponse,
   FormRules,
-  Rules,
   SubmitProps,
+  ValidatorConstraints,
 } from 'src/domain/types';
 import { FormSubmitter } from '../application/services/FormSubmitter';
 import { FormValidator } from '../application/services/FormValidator';
@@ -14,10 +14,10 @@ export class ContactForm {
   private readonly formpipeConfig: FormConfig;
   private readonly validator: FormValidator;
   private readonly submitter: FormSubmitter;
-  private readonly formRules: FormRules;
+  private readonly formRules: ValidatorConstraints;
   private readonly localStorageKey = 'formpipe-contact-form';
 
-  constructor(rules?: Rules) {
+  constructor(rules?: FormRules) {
     // Load and validate config first
     const config = loadConfig();
     if (!config) {
@@ -28,7 +28,7 @@ export class ContactForm {
     this.formpipeConfig = config;
 
     // Base rules that will be used if nothing else is provided
-    const defaultRules: FormRules = {
+    const defaultRules: ValidatorConstraints = {
       message: { minLength: 10, maxLength: 300, required: true },
       replyTo: { minLength: 5, maxLength: 50, required: true },
       subject: { minLength: 5, maxLength: 100, required: false },
@@ -73,12 +73,12 @@ export class ContactForm {
    *   message: 'Test message'
    * });
    */
-  validate(data: FormData, rules?: Rules): FormResponse {
+  validate(data: FormData, rules?: FormRules): FormResponse {
     if (!this.validator) {
       return {
         success: false,
         status: 500,
-        error: {
+        errors: {
           type: 'system',
           message:
             'Form validator not initialized. make sure you run npx formpipe init first',
@@ -87,7 +87,7 @@ export class ContactForm {
     }
 
     // Combine instance rules with ad-hoc rules if provided
-    const combinedRules: FormRules = { ...this.formRules };
+    const combinedRules: ValidatorConstraints = { ...this.formRules };
 
     if (rules) {
       Object.keys(rules).forEach((field) => {
@@ -107,7 +107,7 @@ export class ContactForm {
       return {
         success: false,
         status: 400,
-        error: validationErrors.map((error) => ({
+        errors: validationErrors.map((error) => ({
           ...error,
           type: 'validation' as const,
         })),
@@ -128,12 +128,12 @@ export class ContactForm {
       return {
         success: false,
         status: 500,
-        error: {
+        errors: {
           type: 'system',
           message:
             'No config() set up yet, make sure you run npx formpipe init first',
         },
-        rules: this.formRules
+        rules: this.formRules,
       };
     }
 
@@ -149,11 +149,11 @@ export class ContactForm {
       return {
         success: false,
         status: 429,
-        error: {
+        errors: {
           type: 'system',
           message: 'Too many requests, please try again later',
         },
-        rules: this.formRules
+        rules: this.formRules,
       };
     }
 
@@ -184,18 +184,18 @@ export class ContactForm {
         success: true,
         status: 200,
         data: data,
-        rules: this.formRules
+        rules: this.formRules,
       };
     } catch (error) {
       return {
         success: false,
         status: 500,
-        error: {
+        errors: {
           type: 'system',
           message: 'Failed to submit form',
           details: error,
         },
-        rules: this.formRules
+        rules: this.formRules,
       };
     }
   }

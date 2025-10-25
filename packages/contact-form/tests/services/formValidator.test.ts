@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FormValidator } from '../../src/application/services/FormValidator';
-import { FormData, FormRules } from '../../src/domain/types';
+import { FormData, ValidatorConstraints } from '../../src/domain/types';
 
-const rules: FormRules = {
-  replyTo: { minLength: 5, maxLength: 50, required: true },
+const rules: ValidatorConstraints = {
+  replyTo: { minLength: 5, maxLength: 50, required: true, isEmail: true },
   subject: { minLength: 5, maxLength: 100, required: true },
   message: { minLength: 10, maxLength: 1000, required: true },
 };
@@ -34,19 +34,26 @@ describe('FormValidator', () => {
 
     const expectedErrors = [
       {
-        message: 'invalid email address',
+        message: 'Invalid email address',
         field: 'replyTo',
         value: 'bademail',
         type: 'validation',
+        rules: {
+          minLength: rules.replyTo.minLength,
+          maxLength: rules.replyTo.maxLength,
+          required: true,
+          isEmail: true,
+        },
       },
       {
         message: `subject must be between ${rules.subject.minLength} and ${rules.subject.maxLength} characters`,
         field: 'subject',
         value: 'S',
         type: 'validation',
-        constraints: {
+        rules: {
           minLength: rules.subject.minLength,
           maxLength: rules.subject.maxLength,
+          required: rules.subject.required,
         },
       },
       {
@@ -54,7 +61,11 @@ describe('FormValidator', () => {
         field: 'message',
         value: '',
         type: 'validation',
-        constraints: { required: true },
+        rules: {
+          required: true,
+          minLength: rules.message.minLength,
+          maxLength: rules.message.maxLength,
+        },
       },
     ];
 
@@ -82,7 +93,12 @@ describe('FormValidator', () => {
           field: 'replyTo',
           value: '',
           type: 'validation',
-          constraints: { required: true },
+          rules: {
+            isEmail: true,
+            required: true,
+            minLength: rules.replyTo.minLength,
+            maxLength: rules.replyTo.maxLength,
+          },
         },
       ],
       rules,
@@ -105,7 +121,11 @@ describe('FormValidator', () => {
           field: 'subject',
           value: '',
           type: 'validation',
-          constraints: { required: true },
+          rules: {
+            required: true,
+            minLength: rules.subject.minLength,
+            maxLength: rules.subject.maxLength,
+          },
         },
       ],
       rules,
@@ -128,9 +148,10 @@ describe('FormValidator', () => {
           field: 'message',
           value: 'Short',
           type: 'validation',
-          constraints: {
+          rules: {
             minLength: rules.message.minLength,
             maxLength: rules.message.maxLength,
+            required: true,
           },
         },
       ],
