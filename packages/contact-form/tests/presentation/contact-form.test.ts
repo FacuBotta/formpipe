@@ -23,7 +23,7 @@ vi.mock('../../src/domain/entities/FormConfig', async () => {
   };
 });
 
-const mockConfig: FormConfig = {
+const mockConfig: Required<FormConfig> = {
   smtp: {
     host: 'smtp.example.com',
     port: 587,
@@ -39,6 +39,7 @@ const mockConfig: FormConfig = {
     message: { minLength: 10, maxLength: 1000, required: true },
   },
   sendConfirmation: false,
+  rateLimit: 3600,
 };
 
 const validFormData: FormData = {
@@ -90,11 +91,221 @@ describe('ContactForm', () => {
     mockLocalStorage.clear();
   });
 
+  describe('validate method', () => {
+    it('should use default rules when no rules are provided', () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
+      const result = form.validate(validFormData);
+
+      expect(validator.validate).toHaveBeenCalledWith(
+        validFormData,
+        form['formRules']
+      );
+      expect(validator.validate).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        success: true,
+        status: 200,
+        data: validFormData,
+        rules: mockRules,
+      });
+    });
+
+    it('should merge ad-hoc rules with default rules', () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+
+      const adHocRules = {
+        message: { minLength: 20 }, // Sobrescribe el minLength default
+        replyTo: { isEmail: true }, // Agrega una nueva regla
+      };
+
+      const expectedRules = {
+        message: { ...mockConfig.rules.message, ...adHocRules.message },
+        replyTo: { ...mockConfig.rules.replyTo, ...adHocRules.replyTo },
+        subject: mockConfig.rules.subject,
+      };
+
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: expectedRules });
+      const result = form.validate(validFormData, adHocRules);
+
+      expect(validator.validate).toHaveBeenCalledWith(
+        validFormData,
+        expectedRules
+      );
+      expect(validator.validate).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        success: true,
+        status: 200,
+        data: validFormData,
+        rules: expectedRules,
+      });
+    });
+
+    it('should handle empty ad-hoc rules object', () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
+      const result = form.validate(validFormData, {});
+
+      expect(validator.validate).toHaveBeenCalledWith(
+        validFormData,
+        form['formRules']
+      );
+      expect(validator.validate).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        success: true,
+        status: 200,
+        data: validFormData,
+        rules: mockRules,
+      });
+    });
+
+    it('should return system error when validator is not initialized', () => {
+      // Simular que el validator no está inicializado
+      Object.defineProperty(form, 'validator', {
+        value: undefined,
+        writable: true,
+      });
+
+      const result = form.validate(validFormData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        error: {
+          type: 'system',
+          message:
+            'Form validator not initialized. make sure you run npx formpipe init first',
+        },
+      });
+    });
+
+    it('should return validation errors when validation fails', () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+
+      const mockRules = form['formRules'];
+      const validationErrors = [
+        {
+          message: 'Message is too short',
+          field: 'message',
+          value: 'short',
+          type: 'validation' as const,
+          constraints: { minLength: 10 },
+        },
+      ];
+
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: validationErrors, rules: mockRules });
+
+      const result = form.validate(invalidFormData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 400,
+        error: validationErrors,
+        rules: mockRules,
+      });
+    });
+
+    it('should return success when validation passes', () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
+
+      const result = form.validate(validFormData);
+
+      expect(result).toEqual({
+        success: true,
+        status: 200,
+        data: validFormData,
+        rules: mockRules,
+      });
+    });
+
+    it('should correctly combine and return multi-level validation rules', () => {
+      const validator = form['validator'];
+      if (!validator) throw new Error('Validator not found');
+
+      const baseRules = form['formRules'];
+      const adHocRules = {
+        message: {
+          minLength: 50,
+          customRule: true,
+        },
+        replyTo: {
+          isEmail: true,
+          pattern: /^[a-z]+@[a-z]+\.[a-z]{2,}$/,
+        },
+        subject: {
+          required: true,
+        },
+      };
+
+      const expectedRules = {
+        message: { ...baseRules.message, ...adHocRules.message },
+        replyTo: { ...baseRules.replyTo, ...adHocRules.replyTo },
+        subject: { ...baseRules.subject, ...adHocRules.subject },
+      };
+
+      validator.validate = vi.fn().mockReturnValue({
+        errors: [
+          {
+            message: 'Message too short',
+            field: 'message',
+            value: validFormData.message,
+            type: 'validation',
+            constraints: { minLength: 50 },
+          },
+        ],
+        rules: expectedRules,
+      });
+
+      const result = form.validate(validFormData, adHocRules);
+
+      expect(validator.validate).toHaveBeenCalledWith(
+        validFormData,
+        expectedRules
+      );
+      expect(result).toEqual({
+        success: false,
+        status: 400,
+        error: [
+          {
+            message: 'Message too short',
+            field: 'message',
+            value: validFormData.message,
+            type: 'validation',
+            constraints: { minLength: 50 },
+          },
+        ],
+        rules: expectedRules,
+      });
+    });
+  });
+
   describe('submit method', () => {
     it('should return error when validation fails', async () => {
       const validator = form['validator'];
       if (!validator) throw new Error('Validator not found');
 
+      const mockRules = form['formRules'];
       const validationErrors = [
         {
           message: 'Invalid email address',
@@ -124,7 +335,10 @@ describe('ContactForm', () => {
         },
       ];
 
-      validator.validate = vi.fn().mockReturnValue(validationErrors);
+      validator.validate = vi.fn().mockReturnValue({
+        errors: validationErrors,
+        rules: mockRules,
+      });
 
       const submitProps: SubmitProps = {
         ...invalidFormData,
@@ -132,11 +346,11 @@ describe('ContactForm', () => {
       };
 
       const result = await form.submit(submitProps);
-
       expect(result).toEqual({
         success: false,
         status: 400,
         error: expect.arrayContaining(validationErrors),
+        rules: mockRules,
       });
       expect(result.error).toHaveLength(validationErrors.length);
     }); // 👈 ← ESTA LLAVE Y PARÉNTESIS FALTABAN AQUÍ
@@ -147,7 +361,10 @@ describe('ContactForm', () => {
 
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
-      validator.validate = vi.fn().mockReturnValue([]);
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
       submitter.submit = vi
         .fn()
         .mockResolvedValue({ ok: true, data: 'success' });
@@ -168,6 +385,7 @@ describe('ContactForm', () => {
           message: validFormData.message,
           options: { persistData: false },
         },
+        rules: form['formRules'],
       });
       expect(submitter.submit).toHaveBeenCalledWith({
         replyTo: validFormData.replyTo,
@@ -183,7 +401,10 @@ describe('ContactForm', () => {
 
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
-      validator.validate = vi.fn().mockReturnValue([]);
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
       submitter.submit = vi.fn().mockResolvedValue({ ok: true });
 
       const submitProps: SubmitProps = {
@@ -209,7 +430,10 @@ describe('ContactForm', () => {
 
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
-      validator.validate = vi.fn().mockReturnValue([]);
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
       submitter.submit = vi.fn().mockResolvedValue({ ok: true });
 
       mockLocalStorage.setItem.mockImplementation(() => {});
@@ -232,7 +456,10 @@ describe('ContactForm', () => {
 
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
-      validator.validate = vi.fn().mockReturnValue([]);
+      const mockRules = form['formRules'];
+      validator.validate = vi
+        .fn()
+        .mockReturnValue({ errors: [], rules: mockRules });
       submitter.submit = vi.fn().mockRejectedValue(new Error('Network error'));
 
       const submitProps: SubmitProps = {
@@ -250,6 +477,7 @@ describe('ContactForm', () => {
           message: 'Failed to submit form',
           details: new Error('Network error'),
         },
+        rules: form['formRules'],
       });
     });
 
@@ -272,6 +500,7 @@ describe('ContactForm', () => {
           message:
             'No config() set up yet, make sure you run npx formpipe init first',
         },
+        rules: form['formRules'],
       });
     });
   });

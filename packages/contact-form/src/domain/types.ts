@@ -58,4 +58,5 @@ export interface FormResponse {
   data?: FormData;
   status: number;
   error?: FormError | FormError[];
+  rules?: FormRules;
 }
