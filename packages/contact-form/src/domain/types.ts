@@ -1,9 +1,14 @@
-export interface FormData {
-  replyTo?: string;
-  subject?: string;
-  message?: string;
+// Base form fields definition
+export interface FormFields {
+  replyTo: string;
+  subject: string;
+  message: string;
 }
 
+// Form data with optional fields
+export type FormData = Partial<FormFields>;
+
+// Rules definition
 export interface InputRules {
   minLength: number;
   maxLength: number;
@@ -13,20 +18,19 @@ export interface InputRules {
 
 export type ValidationConstraints = Partial<InputRules>;
 
-export interface FormRules {
-  replyTo: InputRules;
-  subject: InputRules;
-  message: InputRules;
-}
+export type FormRules = {
+  [K in keyof FormFields]: InputRules;
+};
 
-export interface Rules {
-  replyTo?: ValidationConstraints;
-  subject?: ValidationConstraints;
-  message?: ValidationConstraints;
-}
+export type Rules = {
+  [K in keyof FormFields]?: ValidationConstraints;
+};
 
 type SubmitOptions = {
   persistData?: boolean;
+  sendConfirmation?: boolean;
+  htmlTemplate?: string;
+  textTemplate?: string;
 };
 
 export interface SubmitProps extends FormData {
@@ -35,7 +39,7 @@ export interface SubmitProps extends FormData {
 
 export interface ValidationError {
   message: string;
-  field: keyof FormData;
+  field: keyof FormFields;
   value: string;
   type: 'validation';
   constraints?: ValidationConstraints;
