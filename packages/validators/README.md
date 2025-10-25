@@ -1,6 +1,12 @@
 # @formpipe/validators
 
-A collection of validation tools
+A collection of validation tools for forms
+
+- Email validation
+- Types check
+- min and max contraints
+
+[See npm package for references](https://www.npmjs.com/package/@formpipe/validators)
 
 ## Installation
 
@@ -96,14 +102,6 @@ escapeHtml('<p>Hello & World</p>');
 escapeHtml('Quote "test" & <tags>');
 // "Quote &quot;test&quot; &amp; &lt;tags&gt;"
 ````
-
-Escapes the following characters:
-
-- & → &amp;
-- < → &lt;
-- > → &gt;
-- " → &quot;
-- ' → &#39;
 
 ## TypeScript Support
 
