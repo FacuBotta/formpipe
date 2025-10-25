@@ -1,5 +1,6 @@
 import {
   FormData,
+  FormFields,
   FormResponse,
   FormRules,
   Rules,
@@ -72,7 +73,7 @@ export class ContactForm {
    *   message: 'Test message'
    * });
    */
-  validate(data: FormData): FormResponse {
+  validate(data: FormData, rules?: Rules): FormResponse {
     if (!this.validator) {
       return {
         success: false,
@@ -85,7 +86,23 @@ export class ContactForm {
       };
     }
 
-    const validationErrors = this.validator.validate(data);
+    // Combine instance rules with ad-hoc rules if provided
+    const combinedRules: FormRules = { ...this.formRules };
+
+    if (rules) {
+      Object.keys(rules).forEach((field) => {
+        const key = field as keyof FormFields;
+        if (rules[key]) {
+          combinedRules[key] = {
+            ...combinedRules[key],
+            ...rules[key],
+          };
+        }
+      });
+    }
+
+    const { errors: validationErrors, rules: rulesApplied } =
+      this.validator.validate(data, combinedRules);
     if (validationErrors.length > 0) {
       return {
         success: false,
@@ -94,6 +111,7 @@ export class ContactForm {
           ...error,
           type: 'validation' as const,
         })),
+        rules: rulesApplied,
       };
     }
 
@@ -101,6 +119,7 @@ export class ContactForm {
       success: true,
       status: 200,
       data: data,
+      rules: rulesApplied,
     };
   }
 
@@ -114,6 +133,7 @@ export class ContactForm {
           message:
             'No config() set up yet, make sure you run npx formpipe init first',
         },
+        rules: this.formRules
       };
     }
 
@@ -133,6 +153,7 @@ export class ContactForm {
           type: 'system',
           message: 'Too many requests, please try again later',
         },
+        rules: this.formRules
       };
     }
 
@@ -163,6 +184,7 @@ export class ContactForm {
         success: true,
         status: 200,
         data: data,
+        rules: this.formRules
       };
     } catch (error) {
       return {
@@ -173,6 +195,7 @@ export class ContactForm {
           message: 'Failed to submit form',
           details: error,
         },
+        rules: this.formRules
       };
     }
   }

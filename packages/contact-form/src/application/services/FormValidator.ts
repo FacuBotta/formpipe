@@ -48,8 +48,13 @@ export class FormValidator {
    *   message: 'Test Message'
    * });
    */
-  validate(data: FormData): ValidationError[] {
+  validate(
+    data: FormData,
+    rules?: FormRules
+  ): { errors: ValidationError[]; rules: FormRules } {
     const errors: ValidationError[] = [];
+    // Combine validation rules with instance rules
+    const combinedRules = { ...this.formRules, ...rules };
 
     const addError = (
       field: keyof FormData,
@@ -68,7 +73,7 @@ export class FormValidator {
 
     for (const key of Object.keys(data)) {
       const value = data[key as keyof FormData]?.trim() ?? '';
-      const rules = this.formRules[key as keyof FormRules];
+      const rules = combinedRules[key as keyof FormRules];
       if (key === 'replyTo' && value && !isEmail(value)) {
         addError(key as keyof FormData, value, 'invalid email address');
       }
@@ -89,6 +94,6 @@ export class FormValidator {
       }
     }
 
-    return errors;
+    return { errors, rules: combinedRules };
   }
 }
