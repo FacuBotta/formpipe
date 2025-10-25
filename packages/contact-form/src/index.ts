@@ -1,3 +1,8 @@
 export * as validators from '@formpipe/validators';
-export * as types from './domain/types';
-export { contactForm } from './presentation/contactForm';
+export type {
+  FormData,
+  FormError,
+  FormResponse,
+  Rules as FormRules,
+} from './domain/types.js';
+export { ContactForm } from './presentation/contactForm.js';

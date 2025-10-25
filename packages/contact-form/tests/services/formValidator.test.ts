@@ -31,13 +31,13 @@ describe('FormValidator', () => {
 
     const expectedErrors = [
       {
-        message: 'Invalid email address',
+        message: 'invalid email address',
         field: 'replyTo',
         value: 'bademail',
         type: 'validation',
       },
       {
-        message: `Subject must be between ${rules.subject.minLength} and ${rules.subject.maxLength} characters`,
+        message: `subject must be between ${rules.subject.minLength} and ${rules.subject.maxLength} characters`,
         field: 'subject',
         value: 'S',
         type: 'validation',
@@ -47,7 +47,7 @@ describe('FormValidator', () => {
         },
       },
       {
-        message: 'Message is required',
+        message: 'message is required',
         field: 'message',
         value: '',
         type: 'validation',
@@ -58,7 +58,7 @@ describe('FormValidator', () => {
     const result = validator.validate(invalidData);
     expect(result).toHaveLength(expectedErrors.length);
     expect(result).toEqual(expect.arrayContaining(expectedErrors));
-  }); // 👈 faltaba esta llave y paréntesis aquí
+  });
 
   it('should return error for missing required email', () => {
     const invalidData: FormData = {
@@ -71,7 +71,7 @@ describe('FormValidator', () => {
     expect(result).toHaveLength(1);
     expect(result).toEqual([
       {
-        message: 'Email is required',
+        message: 'replyTo is required',
         field: 'replyTo',
         value: '',
         type: 'validation',
@@ -91,7 +91,7 @@ describe('FormValidator', () => {
     expect(result).toHaveLength(1);
     expect(result).toEqual([
       {
-        message: 'Subject is required',
+        message: 'subject is required',
         field: 'subject',
         value: '',
         type: 'validation',
@@ -111,7 +111,7 @@ describe('FormValidator', () => {
     expect(result).toHaveLength(1);
     expect(result).toEqual([
       {
-        message: `Message must be between ${rules.message.minLength} and ${rules.message.maxLength} characters`,
+        message: `message must be between ${rules.message.minLength} and ${rules.message.maxLength} characters`,
         field: 'message',
         value: 'Short',
         type: 'validation',

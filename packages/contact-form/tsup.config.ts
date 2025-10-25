@@ -16,6 +16,7 @@ export default defineConfig({
   outDir: 'dist',
   platform: 'node',
   shims: true,
+  noExternal: [/.*/],
   tsconfig: './tsconfig.json',
   outExtension({ format }) {
     return {

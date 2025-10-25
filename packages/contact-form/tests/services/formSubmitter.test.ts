@@ -24,7 +24,7 @@ describe('FormSubmitter', () => {
     vi.restoreAllMocks();
   });
 
-  describe('submitForm', () => {
+  describe('submit', () => {
     it('should submit form successfully with valid data', async () => {
       const mockResponse = {
         ok: true,
@@ -33,7 +33,7 @@ describe('FormSubmitter', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await submitter.submitForm(validFormData);
+      const result = await submitter.submit(validFormData);
 
       expect(result).toBe(mockResponse);
       expect(mockFetch).toHaveBeenCalledWith(validFormData.url, {
@@ -55,7 +55,7 @@ describe('FormSubmitter', () => {
         url: '',
       };
 
-      await expect(submitter.submitForm(invalidData)).rejects.toThrow(
+      await expect(submitter.submit(invalidData)).rejects.toThrow(
         'No URL provided for form submission'
       );
     });
@@ -68,7 +68,7 @@ describe('FormSubmitter', () => {
         url: undefined as any,
       };
 
-      await expect(submitter.submitForm(invalidData)).rejects.toThrow(
+      await expect(submitter.submit(invalidData)).rejects.toThrow(
         'No URL provided for form submission'
       );
     });
@@ -79,7 +79,7 @@ describe('FormSubmitter', () => {
         replyTo: '',
       };
 
-      await expect(submitter.submitForm(invalidData)).rejects.toThrow(
+      await expect(submitter.submit(invalidData)).rejects.toThrow(
         'Missing required form fields'
       );
     });
@@ -90,7 +90,7 @@ describe('FormSubmitter', () => {
         subject: '',
       };
 
-      await expect(submitter.submitForm(invalidData)).rejects.toThrow(
+      await expect(submitter.submit(invalidData)).rejects.toThrow(
         'Missing required form fields'
       );
     });
@@ -101,7 +101,7 @@ describe('FormSubmitter', () => {
         message: '',
       };
 
-      await expect(submitter.submitForm(invalidData)).rejects.toThrow(
+      await expect(submitter.submit(invalidData)).rejects.toThrow(
         'Missing required form fields'
       );
     });
@@ -114,7 +114,7 @@ describe('FormSubmitter', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(submitter.submitForm(validFormData)).rejects.toThrow(
+      await expect(submitter.submit(validFormData)).rejects.toThrow(
         'HTTP error! status: 400'
       );
     });
@@ -127,7 +127,7 @@ describe('FormSubmitter', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(submitter.submitForm(validFormData)).rejects.toThrow(
+      await expect(submitter.submit(validFormData)).rejects.toThrow(
         'HTTP error! status: 500'
       );
     });
@@ -136,7 +136,7 @@ describe('FormSubmitter', () => {
       const networkError = new Error('Network error');
       mockFetch.mockRejectedValue(networkError);
 
-      await expect(submitter.submitForm(validFormData)).rejects.toThrow(
+      await expect(submitter.submit(validFormData)).rejects.toThrow(
         'Network error'
       );
     });
@@ -144,7 +144,7 @@ describe('FormSubmitter', () => {
     it('should throw unknown error when fetch fails with non-Error object', async () => {
       mockFetch.mockRejectedValue('String error');
 
-      await expect(submitter.submitForm(validFormData)).rejects.toThrow(
+      await expect(submitter.submit(validFormData)).rejects.toThrow(
         'Unknown error occurred during form submission'
       );
     });
@@ -157,7 +157,7 @@ describe('FormSubmitter', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await submitter.submitForm(validFormData);
+      const result = await submitter.submit(validFormData);
 
       expect(result).toBe(mockResponse);
       expect(result.status).toBe(201);
@@ -170,7 +170,7 @@ describe('FormSubmitter', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      await submitter.submitForm(validFormData);
+      await submitter.submit(validFormData);
 
       expect(mockFetch).toHaveBeenCalledWith(
         validFormData.url,
