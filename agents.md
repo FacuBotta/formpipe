@@ -17,38 +17,39 @@ Publishing: npm registry (@formpipe/\*)
 Test backend environment: PHP + PHPMailer (inside @formpipe/contactForm/php)
 
 📦 Monorepo Structure
-form/
-├── packages/
-│ ├── validators/ → Generic validation package
-│ │ ├── src/
-│ │ │ ├── isEmail.ts
-│ │ │ ├── isString.ts
-│ │ │ └── isInRange.ts
-│ │ ├── tests/
-│ │ │ └── isEmail.test.ts
-│ │ ├── tsup.config.ts
-│ │ └── package.json → name: "@formpipe/validators"
-│ │
-│ ├── contactForm/ → Main package for form handling and submission
-│ │ ├── src/
-│ │ │ ├── application/
-│ │ │ │ ├── use-cases/
-│ │ │ │ └── services/ → Use cases, sending logic
-│ │ │ ├── domain/ → Entities and business rules
-│ │ │ ├── presentation/ → Front-end interfaces (config and submit)
-│ │ │ └── cli/ → CLI tools (setup, build, test)
-│ │ │
-│ │ ├── php/ → Generated PHP code for the endpoint
-│ │ ├── tsup.config.ts
-│ │ └── package.json → name: "@formpipe/contact-form"
-│ │
-│ ├── ui/ → Visual components (inputs, forms)
-│ ├── src/
-│ └── package.json → name: "@formpipe/ui"
-│
-├── package.json → Root configuration + npm workspaces
-├── tsconfig.base.json → Base TypeScript configuration
-└── agents.md → This file
+formpipe/
+├── agents.md
+├── contributors.md
+├── eslint.config.mjs
+├── LICENSE
+├── package.json
+├── package-lock.json
+├── packages
+│   ├── contact-form
+│   │   ├── dist
+│   │   ├── formpipe-contact-form-0.1.0.tgz
+│   │   ├── package.json
+│   │   ├── php
+│   │   ├── src
+│   │   ├── tests
+│   │   ├── tsconfig.json
+│   │   └── tsup.config.ts
+│   └── validators
+│   ├── dist
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── README.md
+│   ├── src
+│   ├── tests
+│   └── tsup.config.ts
+├── README.md
+├── test
+│   ├── formpipe.config.json
+│   ├── index.html
+│   ├── index.js
+│   ├── package.json
+│   └── package-lock.json
+└── tsconfig.base.json
 
 🧠 Architecture (Clean Architecture)
 
@@ -68,7 +69,7 @@ domain → must not depend on anything external
 
 🧰 Available Commands (npm workspaces)
 
-From the project root (/form):
+From the project root (/formpipe):
 
 # Install dependencies for all packages
 
@@ -100,6 +101,8 @@ if (!isString(subject)) throw new Error("Invalid subject");
 
 🎨 Code Style
 
+Documentation
+
 Indentation: 2 spaces
 Semicolons: required at the end of every statement
 Imports: ordered by type (node, external libs, internal)
@@ -123,11 +126,75 @@ export function validateEmail(value: string): boolean {
 return isEmail(value);
 }
 
-🧩 Publishing
+Documentation Rules
 
-Each package inside packages/\* is published individually:
+All code in the formpipe/ repository **must be documented**. This includes:
 
-cd packages/validators
-npm publish --access public
+1. **Functions**
 
-The root package.json has "private": true and is not published.
+   - Every function must have a **JSDoc block** describing:
+     - Purpose / what the function does
+     - Parameters (type + description)
+     - Return type
+     - Possible errors or exceptions thrown
+   - Example:
+     ```ts
+     /**
+      * Validates that a string is a valid email address.
+      *
+      * @param value - The string to validate
+      * @returns True if the string is a valid email, false otherwise
+      * @throws Will throw an error if the input is not a string
+      */
+     export function validateEmail(value: string): boolean {
+       return isEmail(value);
+     }
+     ```
+
+2. **Classes**
+
+   - Each class must have a **description block** at the top explaining its purpose.
+   - All properties and methods should be documented.
+   - Example:
+
+     ```ts
+     /**
+      * Represents a contact form submission.
+      * Handles validation, submission, and local persistence.
+      */
+     export class ContactForm {
+       /**
+        * The email of the sender.
+        */
+       public replyTo: string;
+
+       /**
+        * Sends the form data to the backend.
+        *
+        * @returns Promise resolving with submission result
+        */
+       submit(): Promise<SubmissionResult> {
+         // implementation
+       }
+     }
+     ```
+
+3. **Methods**
+   - Each method inside a class must have a **JSDoc block**.
+   - Include:
+     - Purpose
+     - Parameters
+     - Return type
+     - Exceptions/errors thrown
+   - Follow same style as functions.
+
+---
+
+📌 **Additional Guidelines for Documentation**
+
+- Use **English** for all docstrings.
+- Keep descriptions concise but informative.
+- Use proper typing whenever possible (TypeScript types).
+- Include examples when the usage might not be obvious.
+- Update documentation whenever code is changed.
+- Documentation style must follow the existing **JSDoc/TypeScript conventions** used in the project.

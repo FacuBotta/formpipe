@@ -8,4 +8,7 @@ describe('isEmail', () => {
   it('rejects invalid emails', () => {
     expect(isEmail('badmail')).toBe(false);
   });
+  it('rejects invalid emails', () => {
+    expect(isEmail('..te........ste@example.com.eveil')).toBe(false);
+  });
 });

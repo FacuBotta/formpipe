@@ -7,7 +7,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
-      "@formpipe/validators": ["../validators/src/index.ts"]
+      "@formpipe/validators": ["../validators/src/index.ts"],
+      "src/*": ["./src/*"]
     },
     "allowImportingTsExtensions": false,
     "noEmit": false

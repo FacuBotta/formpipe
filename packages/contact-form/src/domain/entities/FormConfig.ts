@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { FormRules } from '../types';
+import { Rules } from '../types';
 
 interface SendConfirmation {
   message: string;
@@ -16,7 +16,7 @@ export interface FormConfig {
   baseURL: string;
   from: string;
   to: string;
-  rules: FormRules;
+  rules?: Rules;
   sendConfirmation: SendConfirmation | false;
   rateLimit?: number;
 }

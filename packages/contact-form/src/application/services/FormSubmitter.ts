@@ -5,7 +5,7 @@ interface SubmitterProps extends FormData {
 }
 
 export class FormSubmitter {
-  async submitForm(data: SubmitterProps): Promise<Response> {
+  async submit(data: SubmitterProps): Promise<Response> {
     if (!data.url) {
       throw new Error('No URL provided for form submission');
     }

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FormConfig } from '../../src/domain/entities/FormConfig';
 import { FormData, SubmitProps } from '../../src/domain/types';
-import { contactForm } from '../../src/presentation/contactForm';
+import { ContactForm } from '../../src/presentation/contactForm';
 
 const mockLocalStorage = {
   getItem: vi.fn(),
@@ -53,15 +53,15 @@ const invalidFormData: FormData = {
   message: 'Short',
 };
 
-describe('contactForm', () => {
-  let form: contactForm;
+describe('ContactForm', () => {
+  let form: ContactForm;
   let mockFetch: typeof fetch;
 
   beforeEach(async () => {
     const { loadConfig } = await import('../../src/domain/entities/FormConfig');
     vi.mocked(loadConfig).mockReturnValue(mockConfig);
 
-    form = new contactForm();
+    form = new ContactForm();
     mockFetch = vi.fn();
     global.fetch = mockFetch;
 
@@ -79,7 +79,7 @@ describe('contactForm', () => {
 
     Object.defineProperty(form, 'submitter', {
       value: {
-        submitForm: vi.fn(),
+        submit: vi.fn(),
       },
       writable: true,
     });
@@ -148,7 +148,7 @@ describe('contactForm', () => {
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
       validator.validate = vi.fn().mockReturnValue([]);
-      submitter.submitForm = vi
+      submitter.submit = vi
         .fn()
         .mockResolvedValue({ ok: true, data: 'success' });
 
@@ -169,7 +169,7 @@ describe('contactForm', () => {
           options: { persistData: false },
         },
       });
-      expect(submitter.submitForm).toHaveBeenCalledWith({
+      expect(submitter.submit).toHaveBeenCalledWith({
         replyTo: validFormData.replyTo,
         subject: validFormData.subject,
         message: validFormData.message,
@@ -184,7 +184,7 @@ describe('contactForm', () => {
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
       validator.validate = vi.fn().mockReturnValue([]);
-      submitter.submitForm = vi.fn().mockResolvedValue({ ok: true });
+      submitter.submit = vi.fn().mockResolvedValue({ ok: true });
 
       const submitProps: SubmitProps = {
         ...validFormData,
@@ -210,7 +210,7 @@ describe('contactForm', () => {
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
       validator.validate = vi.fn().mockReturnValue([]);
-      submitter.submitForm = vi.fn().mockResolvedValue({ ok: true });
+      submitter.submit = vi.fn().mockResolvedValue({ ok: true });
 
       mockLocalStorage.setItem.mockImplementation(() => {});
 
@@ -233,9 +233,7 @@ describe('contactForm', () => {
       if (!validator) throw new Error('Validator not found');
       if (!submitter) throw new Error('Submitter not found');
       validator.validate = vi.fn().mockReturnValue([]);
-      submitter.submitForm = vi
-        .fn()
-        .mockRejectedValue(new Error('Network error'));
+      submitter.submit = vi.fn().mockRejectedValue(new Error('Network error'));
 
       const submitProps: SubmitProps = {
         ...validFormData,

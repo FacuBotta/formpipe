@@ -1,22 +1,28 @@
 export interface FormData {
-  replyTo: string;
-  subject: string;
-  message: string;
+  replyTo?: string;
+  subject?: string;
+  message?: string;
 }
 
 export interface InputRules {
   minLength: number;
   maxLength: number;
-  required?: boolean;
+  required: boolean;
+  isEmail?: boolean;
 }
 
-// Tipo parcial para constraints en errores de validación
 export type ValidationConstraints = Partial<InputRules>;
 
 export interface FormRules {
   replyTo: InputRules;
   subject: InputRules;
   message: InputRules;
+}
+
+export interface Rules {
+  replyTo?: ValidationConstraints;
+  subject?: ValidationConstraints;
+  message?: ValidationConstraints;
 }
 
 type SubmitOptions = {
