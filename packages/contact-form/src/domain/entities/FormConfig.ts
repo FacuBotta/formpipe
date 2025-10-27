@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { Rules } from '../types';
+import { FormRules } from '../types';
 
 interface SendConfirmation {
   message: string;
@@ -16,9 +16,11 @@ export interface FormConfig {
   baseURL: string;
   from: string;
   to: string;
-  rules?: Rules;
+  rules?: FormRules;
   sendConfirmation: SendConfirmation | false;
   rateLimit?: number;
+  phpPath?: string; // Path to generate the PHP file, relative to config location
+  debug: boolean;
 }
 
 export const loadConfig = (): FormConfig => {

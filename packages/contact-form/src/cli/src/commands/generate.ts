@@ -1,41 +1,23 @@
-import { writeFileSync } from 'fs';
-import { resolve } from 'path';
 import { FormConfig, loadConfig } from '../../../domain/entities/FormConfig';
+import { copyPhpFolder } from '../utils/copyPhpFolder';
 import { generatePhpFromConfig } from '../utils/generatePhpFromConfig';
+import { resolveProjectPaths } from '../utils/paths';
 
-export default function generate() {
+export default async function generate() {
+  console.log('🚀 Running formpipe generate...\n');
+
   const projectRoot = process.cwd();
-  const phpPath = resolve(projectRoot, 'contact-form.php');
   const config: FormConfig = loadConfig();
-  const phpCode = generatePhpFromConfig(config);
-
-  const fullPhp = `<?php
-require 'vendor/autoload.php';
-use PHPMailer\\PHPMailer\\PHPMailer;
-use PHPMailer\\PHPMailer\\Exception;
-
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    exit(json_encode(['error' => 'Method not allowed']));
-}
-
-${phpCode}
-?>`;
+  const paths = resolveProjectPaths(projectRoot, config.phpPath);
 
   try {
-    writeFileSync(phpPath, fullPhp);
-    console.log('✅ contact-form.php created successfully!');
+    await copyPhpFolder(paths.packagePhpFolder, paths.projectPhpFolder);
+    console.log(`✅ Copied PHP folder to:\n   ${paths.projectPhpFolder}`);
+
+    generatePhpFromConfig(config, paths.projectPhpMainFile);
+    console.log(`✅ Generated PHP form:\n   ${paths.projectPhpMainFile}\n`);
   } catch (error) {
-    if (error instanceof Error) {
-      console.error('❌ Error generating PHP file:', error.message);
-    } else {
-      console.error('❌ An unknown error occurred');
-    }
-    throw error;
+    console.error('❌ Error during generation:', error);
+    process.exit(1);
   }
 }

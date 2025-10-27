@@ -21,7 +21,6 @@ describe('FormValidator', () => {
     const result = validator.validate(correctData);
     expect(result).toEqual({
       errors: [],
-      rules,
     });
   });
 
@@ -62,7 +61,7 @@ describe('FormValidator', () => {
         value: '',
         type: 'validation',
         rules: {
-          required: true,
+          required: rules.message.required,
           minLength: rules.message.minLength,
           maxLength: rules.message.maxLength,
         },
@@ -73,7 +72,6 @@ describe('FormValidator', () => {
     expect(result.errors).toHaveLength(expectedErrors.length);
     expect(result).toEqual({
       errors: expect.arrayContaining(expectedErrors),
-      rules,
     });
   });
 
@@ -101,7 +99,6 @@ describe('FormValidator', () => {
           },
         },
       ],
-      rules,
     });
   });
 
@@ -128,7 +125,6 @@ describe('FormValidator', () => {
           },
         },
       ],
-      rules,
     });
   });
 
@@ -151,11 +147,10 @@ describe('FormValidator', () => {
           rules: {
             minLength: rules.message.minLength,
             maxLength: rules.message.maxLength,
-            required: true,
+            required: rules.message.required,
           },
         },
       ],
-      rules,
     });
   });
 });

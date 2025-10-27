@@ -51,7 +51,7 @@ export class FormValidator {
   validate(
     data: FormData,
     rules?: ValidatorConstraints
-  ): { errors: ValidationError[]; rules: ValidatorConstraints } {
+  ): { errors: ValidationError[] } {
     const errors: ValidationError[] = [];
     // Combine validation rules with instance rules
     const combinedRules = { ...this.formRules, ...rules };
@@ -116,6 +116,6 @@ export class FormValidator {
       }
     }
 
-    return { errors, rules: combinedRules };
+    return errors.length > 0 ? { errors } : { errors: [] };
   }
 }
