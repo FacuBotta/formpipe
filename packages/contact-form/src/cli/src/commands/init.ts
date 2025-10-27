@@ -1,31 +1,34 @@
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { FormConfig } from 'src/domain/entities/FormConfig';
 
 // Get project root directory (where the command is being run)
 const projectRoot = process.cwd();
 const configPath = join(projectRoot, 'formpipe.config.json');
 
-const config = {
+const config: FormConfig = {
   smtp: {
-    host: 'smtp.gmail.com',
-    port: 587,
-    user: 'tu@email.com',
-    pass: 'tu-app-password',
+    host: 'mailpit',
+    port: 1025,
+    user: '',
+    pass: '',
   },
-  baseURL: '/',
-  from: 'no-reply@tusitio.com',
-  to: 'contacto@tusitio.com',
+  baseURL: 'http://localhost:8080',
+  from: 'no-reply@yoursite.com',
+  to: 'contacto@yoursite.com',
   rules: {
+    replyTo: { isEmail: true, required: true },
     subject: { minLength: 5, maxLength: 100 },
     message: { minLength: 10, maxLength: 500 },
   },
-  persistData: true,
   sendConfirmation: {
     message: 'Thanks for contacting us! We will get back to you soon.',
     htmlTemplate:
       'Thanks for contacting us! We will get back to you soon.</h1>',
   },
   rateLimit: 10,
+  phpPath: './php',
+  debug: false,
 };
 
 export default function init() {

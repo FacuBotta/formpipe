@@ -12,6 +12,7 @@ import { FormConfig, loadConfig } from '../domain/entities/FormConfig';
 
 export class ContactForm {
   private readonly formpipeConfig: FormConfig;
+  private readonly endPointPath: string;
   private readonly validator: FormValidator;
   private readonly submitter: FormSubmitter;
   private readonly formRules: ValidatorConstraints;
@@ -20,7 +21,7 @@ export class ContactForm {
   constructor(rules?: FormRules) {
     // Load and validate config first
     const config = loadConfig();
-    if (!config) {
+    if (!config || !config.phpPath) {
       throw new Error(
         'No config() set up yet, make sure you run npx formpipe init first'
       );
@@ -53,8 +54,21 @@ export class ContactForm {
       },
     };
 
+    // Normalize baseURL and phpPath
+    const baseURL = (this.formpipeConfig.baseURL || '').endsWith('/')
+      ? this.formpipeConfig.baseURL
+      : `${this.formpipeConfig.baseURL || ''}/`;
+
+    const phpPath =
+      (this.formpipeConfig.phpPath || './php/')
+        .replace(/^\.\//, '') // Remove leading ./
+        .replace(/\/+$/, '') + // Remove trailing slashes
+      '/';
+
+    this.endPointPath = `${baseURL}${phpPath}contact-form.php`;
+
     this.validator = new FormValidator(this.formRules);
-    this.submitter = new FormSubmitter();
+    this.submitter = new FormSubmitter(this.endPointPath);
   }
 
   /**
@@ -101,8 +115,10 @@ export class ContactForm {
       });
     }
 
-    const { errors: validationErrors, rules: rulesApplied } =
-      this.validator.validate(data, combinedRules);
+    const { errors: validationErrors } = this.validator.validate(
+      data,
+      combinedRules
+    );
     if (validationErrors.length > 0) {
       return {
         success: false,
@@ -111,7 +127,6 @@ export class ContactForm {
           ...error,
           type: 'validation' as const,
         })),
-        rules: rulesApplied,
       };
     }
 
@@ -119,7 +134,6 @@ export class ContactForm {
       success: true,
       status: 200,
       data: data,
-      rules: rulesApplied,
     };
   }
 
@@ -132,78 +146,68 @@ export class ContactForm {
           type: 'system',
           message:
             'No config() set up yet, make sure you run npx formpipe init first',
+          data: null,
         },
-        rules: this.formRules,
       };
     }
 
     // Validate first
-    const validationResult = this.validate(data);
+    const validationResult = this.validate(data.fields);
     if (!validationResult.success) {
       return validationResult;
-    }
-
-    // Handle rate limiting
-    const isRateLimited = await this.checkRateLimit();
-    if (isRateLimited) {
-      return {
-        success: false,
-        status: 429,
-        errors: {
-          type: 'system',
-          message: 'Too many requests, please try again later',
-        },
-        rules: this.formRules,
-      };
     }
 
     // Persist data if requested
     if (data.options?.persistData) {
       const formData = {
-        replyTo: data.replyTo,
-        subject: data.subject,
-        message: data.message,
+        replyTo: data.fields.replyTo,
+        subject: data.fields.subject,
+        message: data.fields.message,
       };
       localStorage.setItem(this.localStorageKey, JSON.stringify(formData));
     }
 
     try {
       const response = await this.submitter.submit({
-        replyTo: data.replyTo,
-        subject: data.subject,
-        message: data.message,
-        url: this.formpipeConfig.baseURL,
+        replyTo: data.fields.replyTo,
+        subject: data.fields.subject,
+        message: data.fields.message,
       });
 
+      // If the submitter failed, return the error
+      if (!response.success) {
+        return {
+          success: false,
+          status: response.status,
+          errors: response.errors,
+          response,
+        };
+      }
+
       // Clear storage on success if persistence was requested
-      if (response?.ok && data.options?.persistData) {
+      if (response?.success && data.options?.persistData) {
         localStorage.removeItem(this.localStorageKey);
       }
 
       return {
         success: true,
-        status: 200,
-        data: data,
-        rules: this.formRules,
+        status: response.status,
+        errors: [],
+        data: data.fields,
+        response: response.data,
       };
     } catch (error) {
       return {
         success: false,
         status: 500,
+        data: data.fields,
         errors: {
           type: 'system',
           message: 'Failed to submit form',
-          details: error,
+          data: error,
         },
-        rules: this.formRules,
       };
     }
-  }
-
-  // Helpers
-  private async checkRateLimit(): Promise<boolean> {
-    // TODO: This have to take an answer from the backend
-    return false;
   }
 
   loadFromStorage(): FormData | null {

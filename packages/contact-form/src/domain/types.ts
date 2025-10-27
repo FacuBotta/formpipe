@@ -28,12 +28,11 @@ export type FormRules = {
 
 type SubmitOptions = {
   persistData?: boolean;
-  sendConfirmation?: boolean;
-  htmlTemplate?: string;
-  textTemplate?: string;
+  debug?: boolean;
 };
 
-export interface SubmitProps extends FormData {
+export interface SubmitProps {
+  fields: FormData;
   options?: SubmitOptions;
 }
 
@@ -48,7 +47,7 @@ export interface ValidationError {
 export interface SystemError {
   message: string;
   type: 'system';
-  details?: unknown;
+  data?: unknown;
 }
 
 export type FormError = ValidationError | SystemError;
@@ -59,4 +58,7 @@ export interface FormResponse {
   status: number;
   errors?: FormError | FormError[];
   rules?: FormRules;
+  response?: unknown;
 }
+
+export type SubmitResponse = FormResponse;

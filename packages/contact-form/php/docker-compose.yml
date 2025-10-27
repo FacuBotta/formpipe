@@ -1,0 +1,17 @@
+services:
+  php:
+    image: php:8.2-apache
+    volumes:
+      - ./:/var/www/html/php
+      - ./apache2.conf:/etc/apache2/conf-available/servername.conf
+    command: /bin/bash -c "a2enconf servername && apache2-foreground"
+    ports:
+      - '8080:80'
+    depends_on:
+      - mailpit
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - '8025:8025' # UI web
+      - '1025:1025' # SMTP port

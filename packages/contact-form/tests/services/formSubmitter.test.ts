@@ -26,16 +26,21 @@ describe('FormSubmitter', () => {
 
   describe('submit', () => {
     it('should submit form successfully with valid data', async () => {
+      const responseData = { success: true };
       const mockResponse = {
         ok: true,
         status: 200,
-        json: vi.fn().mockResolvedValue({ success: true }),
+        json: () => Promise.resolve(responseData),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
       const result = await submitter.submit(validFormData);
 
-      expect(result).toBe(mockResponse);
+      expect(result).toEqual({
+        success: true,
+        status: 200,
+        data: responseData,
+      });
       expect(mockFetch).toHaveBeenCalledWith(validFormData.url, {
         method: 'POST',
         headers: {
@@ -43,24 +48,33 @@ describe('FormSubmitter', () => {
         },
         body: JSON.stringify({
           replyTo: validFormData.replyTo,
-          subject: validFormData.subject,
-          message: validFormData.message,
+          fields: [
+            { key: 'subject', value: validFormData.subject },
+            { key: 'message', value: validFormData.message },
+          ],
         }),
       });
     });
 
-    it('should throw error when URL is missing', async () => {
+    it('should return error response when URL is missing', async () => {
       const invalidData = {
         ...validFormData,
         url: '',
       };
 
-      await expect(submitter.submit(invalidData)).rejects.toThrow(
-        'No URL provided for form submission'
-      );
+      const result = await submitter.submit(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        errors: {
+          type: 'system',
+          message: 'No URL provided for form submission',
+        },
+      });
     });
 
-    it('should throw error when URL is undefined', async () => {
+    it('should return error response when URL is undefined', async () => {
       const invalidData = {
         replyTo: 'test@example.com',
         subject: 'Test Subject',
@@ -68,99 +82,121 @@ describe('FormSubmitter', () => {
         url: undefined as any,
       };
 
-      await expect(submitter.submit(invalidData)).rejects.toThrow(
-        'No URL provided for form submission'
-      );
+      const result = await submitter.submit(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        errors: {
+          type: 'system',
+          message: 'No URL provided for form submission',
+        },
+      });
     });
 
-    it('should throw error when replyTo is missing', async () => {
+    it('should return error response when replyTo is missing', async () => {
       const invalidData = {
         ...validFormData,
         replyTo: '',
       };
 
-      await expect(submitter.submit(invalidData)).rejects.toThrow(
-        'Missing required form fields'
-      );
+      const result = await submitter.submit(invalidData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        errors: {
+          type: 'system',
+          message: 'Missing required form fields',
+        },
+      });
     });
 
-    it('should throw error when subject is missing', async () => {
-      const invalidData = {
-        ...validFormData,
-        subject: '',
-      };
-
-      await expect(submitter.submit(invalidData)).rejects.toThrow(
-        'Missing required form fields'
-      );
-    });
-
-    it('should throw error when message is missing', async () => {
-      const invalidData = {
-        ...validFormData,
-        message: '',
-      };
-
-      await expect(submitter.submit(invalidData)).rejects.toThrow(
-        'Missing required form fields'
-      );
-    });
-
-    it('should throw error when HTTP response is not ok', async () => {
+    it('should return error response when HTTP response is not ok', async () => {
+      const responseData = { error: 'Bad Request' };
       const mockResponse = {
         ok: false,
         status: 400,
-        statusText: 'Bad Request',
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      await expect(submitter.submit(validFormData)).rejects.toThrow(
-        'HTTP error! status: 400'
-      );
-    });
-
-    it('should throw error when HTTP response is 500', async () => {
-      const mockResponse = {
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      };
-      mockFetch.mockResolvedValue(mockResponse);
-
-      await expect(submitter.submit(validFormData)).rejects.toThrow(
-        'HTTP error! status: 500'
-      );
-    });
-
-    it('should throw error when fetch fails with network error', async () => {
-      const networkError = new Error('Network error');
-      mockFetch.mockRejectedValue(networkError);
-
-      await expect(submitter.submit(validFormData)).rejects.toThrow(
-        'Network error'
-      );
-    });
-
-    it('should throw unknown error when fetch fails with non-Error object', async () => {
-      mockFetch.mockRejectedValue('String error');
-
-      await expect(submitter.submit(validFormData)).rejects.toThrow(
-        'Unknown error occurred during form submission'
-      );
-    });
-
-    it('should handle successful response with different status codes', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 201,
-        json: vi.fn().mockResolvedValue({ id: 123 }),
+        json: () => Promise.resolve(responseData),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
       const result = await submitter.submit(validFormData);
 
-      expect(result).toBe(mockResponse);
-      expect(result.status).toBe(201);
+      expect(result).toEqual({
+        success: false,
+        status: 400,
+        data: responseData,
+      });
+    });
+
+    it('should return error response when HTTP response is 500', async () => {
+      const responseData = { error: 'Internal Server Error' };
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve(responseData),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await submitter.submit(validFormData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        data: responseData,
+      });
+    });
+
+    it('should return error response when fetch fails with network error', async () => {
+      const networkError = new Error('Network error');
+      mockFetch.mockRejectedValue(networkError);
+
+      const result = await submitter.submit(validFormData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        errors: {
+          type: 'system',
+          message: 'Unknown error occurred during form submission',
+          details: networkError,
+        },
+      });
+    });
+
+    it('should return error response when fetch fails with non-Error object', async () => {
+      mockFetch.mockRejectedValue('String error');
+
+      const result = await submitter.submit(validFormData);
+
+      expect(result).toEqual({
+        success: false,
+        status: 500,
+        errors: {
+          type: 'system',
+          message: 'Unknown error occurred during form submission',
+          details: 'String error',
+        },
+      });
+    });
+
+    it('should handle successful response with different status codes', async () => {
+      const responseData = { id: 123 };
+      const mockResponse = {
+        ok: true,
+        status: 201,
+        json: () => Promise.resolve(responseData),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const result = await submitter.submit(validFormData);
+
+      expect(result).toEqual({
+        success: true,
+        status: 201,
+        data: responseData,
+      });
     });
 
     it('should send correct headers and body', async () => {
@@ -181,8 +217,10 @@ describe('FormSubmitter', () => {
           },
           body: JSON.stringify({
             replyTo: validFormData.replyTo,
-            subject: validFormData.subject,
-            message: validFormData.message,
+            fields: [
+              { key: 'subject', value: validFormData.subject },
+              { key: 'message', value: validFormData.message },
+            ],
           }),
         })
       );

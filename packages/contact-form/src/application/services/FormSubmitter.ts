@@ -1,42 +1,81 @@
-import { FormData } from 'src/domain/types';
-
-interface SubmitterProps extends FormData {
-  url: string;
-}
+import {
+  FormResponse,
+  FormData as IFormData,
+  SystemError,
+} from 'src/domain/types';
 
 export class FormSubmitter {
-  async submit(data: SubmitterProps): Promise<Response> {
-    if (!data.url) {
-      throw new Error('No URL provided for form submission');
+  constructor(private readonly url: string) {
+    this.url = url;
+  }
+
+  async submit(data: IFormData): Promise<FormResponse> {
+    if (!this.url) {
+      return this.createErrorResponse({
+        message: 'No URL provided for form submission',
+        type: 'system',
+      });
     }
 
-    if (!data.replyTo || !data.subject || !data.message) {
-      throw new Error('Missing required form fields');
+    if (!data.replyTo) {
+      return this.createErrorResponse({
+        message: 'Missing required form fields',
+        type: 'system',
+      });
     }
+    const fields = [];
+
+    for (const key of Object.keys(data)) {
+      if (key !== 'replyTo' && data[key as keyof IFormData]) {
+        fields.push({ key, value: data[key as keyof IFormData] });
+      }
+    }
+
+    const formFields = [];
+    for (const key of Object.keys(data)) {
+      if (key !== 'replyTo' && data[key as keyof IFormData]) {
+        formFields.push({
+          key,
+          value: data[key as keyof IFormData] as string,
+        });
+      }
+    }
+
+    const body = JSON.stringify({
+      replyTo: data.replyTo,
+      fields: formFields,
+    });
 
     try {
-      const response = await fetch(data.url, {
+      const response = await fetch(this.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          replyTo: data.replyTo,
-          subject: data.subject,
-          message: data.message,
-        }),
+        body,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const responseData = await response.json();
 
-      return response;
+      return {
+        success: response.ok,
+        status: response.status,
+        data: responseData,
+      };
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Unknown error occurred during form submission');
+      return this.createErrorResponse({
+        message: 'Unknown error occurred during form submission',
+        type: 'system',
+        data: { error, url: this.url },
+      });
     }
+  }
+
+  private createErrorResponse(error: SystemError): FormResponse {
+    return {
+      success: false,
+      status: 500,
+      errors: error,
+    };
   }
 }
