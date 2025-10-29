@@ -1,5 +1,6 @@
 import {
   AllowedFormFields,
+  FormConfig,
   FormData,
   FormResponse,
   FormRules,
@@ -8,7 +9,6 @@ import {
 } from 'src/domain/types';
 import { FormSubmitter } from '../application/services/FormSubmitter';
 import { FormValidator } from '../application/services/FormValidator';
-import { FormConfig } from '../domain/entities/FormConfig';
 
 export class ContactForm {
   private readonly endPointPath: string;
@@ -25,19 +25,6 @@ export class ContactForm {
     this.formRules = config.rules;
     this.endPointPath = config.endPointPath;
 
-    /*     // Normalize baseURL and phpPath
-    const baseURL = (config.baseURL || '').endsWith('/')
-      ? config.baseURL
-      : `${config.baseURL || ''}/`;
-
-    const phpPath =
-      (config.phpPath || './php/')
-        .replace(/^\.\//, '') // Remove leading ./
-        .replace(/\/+$/, '') + // Remove trailing slashes
-      '/';
-
-    this.endPointPath = `${baseURL}${phpPath}contact-form.php`;
- */
     this.validator = new FormValidator(this.formRules);
     this.submitter = new FormSubmitter(this.endPointPath);
   }

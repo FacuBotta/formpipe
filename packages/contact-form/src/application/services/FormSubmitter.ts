@@ -74,10 +74,9 @@ export class FormSubmitter {
       });
 
       const responseData = (await sendEmailResult.json()) as SubmitterResponse;
-
       return {
         success: responseData.success,
-        status: responseData.status,
+        status: 200,
         response: {
           data: responseData.response.data,
           errors: null,

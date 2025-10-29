@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { FormConfig } from '../../../domain/entities/FormConfig';
+import { FormConfig } from 'src/domain/types';
 import { copyPhpFolder } from '../utils/copyPhpFolder';
 import { generatePhpFromConfig } from '../utils/generatePhpFromConfig';
 import { loadConfig } from '../utils/loadConfig';
@@ -40,7 +40,7 @@ function findPackagePhpFolder(startDir: string): string {
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       if (pkg.name && pkg.name.startsWith('@formpipe/')) {
-        return path.resolve(dir, 'php');
+        return path.resolve(dir, 'dist/php');
       }
     }
 

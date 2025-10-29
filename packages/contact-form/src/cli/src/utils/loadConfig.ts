@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { FormConfig } from 'src/domain/entities/FormConfig';
+import { FormConfig } from 'src/domain/types';
 
 export const loadConfig = (): FormConfig => {
   try {

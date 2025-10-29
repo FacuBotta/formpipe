@@ -82,3 +82,19 @@ export interface FormResponse {
   };
 }
 export type SubmitResponse = FormResponse;
+
+export interface FormConfig {
+  rules: ValidatorConstraints;
+  endPointPath: string;
+  smtp: {
+    host: string;
+    port: number;
+    user: string;
+    pass: string;
+  };
+  from: string;
+  to: string;
+  sendConfirmation: boolean;
+  rateLimit: number;
+  debug: boolean;
+}
