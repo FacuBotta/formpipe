@@ -18,6 +18,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 $config = null;
 
+
 // Helper function to determine encryption type based on port
 function getSMTPSecure($port)
 {

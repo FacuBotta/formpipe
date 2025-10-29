@@ -1,12 +1,12 @@
 // Base form fields definition
-export interface FormFields {
+export interface AllowedFormFields {
   replyTo: string;
   subject: string;
   message: string;
 }
 
 // Form data with optional fields
-export type FormData = Partial<FormFields>;
+export type FormData = Partial<AllowedFormFields>;
 
 // Rules definition
 export interface InputRules {
@@ -16,14 +16,23 @@ export interface InputRules {
   isEmail?: boolean;
 }
 
+export type FormInput = {
+  field: keyof AllowedFormFields;
+  value: string;
+  rules: ValidationConstraints;
+};
+export interface InputError extends FormInput {
+  message: string;
+}
+
 export type ValidationConstraints = Partial<InputRules>;
 
 export type ValidatorConstraints = {
-  [K in keyof FormFields]: InputRules;
+  [K in keyof AllowedFormFields]: InputRules;
 };
 
 export type FormRules = {
-  [K in keyof FormFields]?: ValidationConstraints;
+  [K in keyof AllowedFormFields]?: ValidationConstraints;
 };
 
 type SubmitOptions = {
@@ -36,29 +45,40 @@ export interface SubmitProps {
   options?: SubmitOptions;
 }
 
-export interface ValidationError {
-  message: string;
-  field: keyof FormFields;
-  value: string;
+export interface ValidatorResponse {
+  success: boolean;
   type: 'validation';
-  rules?: ValidationConstraints;
+  data: FormInput[];
 }
 
 export interface SystemError {
-  message: string;
+  status: 500;
   type: 'system';
+  message: string;
   data?: unknown;
 }
-
-export type FormError = ValidationError | SystemError;
+export type SubmitterResponse = {
+  success: boolean;
+  status: number;
+  response: {
+    data: unknown;
+    errors?: FormError[] | null;
+    message?: string;
+  };
+};
+export type FormError = {
+  type: 'validation' | 'system';
+  message: string;
+  data?: unknown;
+};
 
 export interface FormResponse {
   success: boolean;
-  data?: FormData;
   status: number;
-  errors?: FormError | FormError[];
-  rules?: FormRules;
-  response?: unknown;
+  response: {
+    data: unknown;
+    errors: unknown[];
+    message?: string;
+  };
 }
-
 export type SubmitResponse = FormResponse;

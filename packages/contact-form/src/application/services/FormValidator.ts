@@ -1,9 +1,10 @@
 import { isEmail, isInRange, isString } from '@formpipe/validators';
 import {
   FormData,
+  InputError,
   ValidationConstraints,
-  ValidationError,
   ValidatorConstraints,
+  ValidatorResponse,
 } from 'src/domain/types';
 
 /**
@@ -48,11 +49,8 @@ export class FormValidator {
    *   message: 'Test Message'
    * });
    */
-  validate(
-    data: FormData,
-    rules?: ValidatorConstraints
-  ): { errors: ValidationError[] } {
-    const errors: ValidationError[] = [];
+  validate(data: FormData, rules?: ValidatorConstraints): ValidatorResponse {
+    const inputErrors: InputError[] = [];
     // Combine validation rules with instance rules
     const combinedRules = { ...this.formRules, ...rules };
 
@@ -60,15 +58,17 @@ export class FormValidator {
       field: keyof FormData,
       value: string,
       message: string,
-      rules?: ValidationConstraints
+      rules: ValidationConstraints
     ) => {
-      errors.push({
-        type: 'validation',
+      const inputError: InputError = {
         field,
         value,
         message,
-        rules,
-      });
+        rules: {
+          ...rules,
+        },
+      };
+      inputErrors.push(inputError);
     };
 
     // First check all required fields
@@ -116,6 +116,10 @@ export class FormValidator {
       }
     }
 
-    return errors.length > 0 ? { errors } : { errors: [] };
+    return {
+      success: inputErrors.length === 0,
+      type: 'validation',
+      data: inputErrors,
+    };
   }
 }

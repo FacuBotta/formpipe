@@ -72,6 +72,7 @@ describe('FormValidator', () => {
     expect(result.errors).toHaveLength(expectedErrors.length);
     expect(result).toEqual({
       errors: expect.arrayContaining(expectedErrors),
+      rules,
     });
   });
 
@@ -99,6 +100,7 @@ describe('FormValidator', () => {
           },
         },
       ],
+      rules,
     });
   });
 

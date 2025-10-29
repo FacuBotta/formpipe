@@ -1,5 +1,4 @@
-import { readFileSync } from 'fs';
-import { FormRules } from '../types';
+import { ValidatorConstraints } from '../types';
 
 interface SendConfirmation {
   message: string;
@@ -13,20 +12,18 @@ export interface FormConfig {
     user: string;
     pass: string;
   };
-  baseURL: string;
+  endPointPath: string;
   from: string;
   to: string;
-  rules?: FormRules;
+  rules?: ValidatorConstraints;
   sendConfirmation: SendConfirmation | false;
   rateLimit?: number;
-  phpPath?: string; // Path to generate the PHP file, relative to config location
   debug: boolean;
 }
 
-export const loadConfig = (): FormConfig => {
-  try {
-    return JSON.parse(readFileSync('formpipe.config.json', 'utf8'));
-  } catch {
-    throw new Error('❌ Configuration file not found. Run: npx formpipe init');
-  }
-};
+export async function loadConfig(): Promise<FormConfig> {
+  const res = await fetch('/php/formpipe.php');
+  const json = await res.json();
+  if (!json.success) throw new Error('Could not load config');
+  return json.data;
+}
