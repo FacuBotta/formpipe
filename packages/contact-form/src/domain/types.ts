@@ -1,12 +1,12 @@
 // Base form fields definition
-export interface FormFields {
+export interface AllowedFormFields {
   replyTo: string;
   subject: string;
   message: string;
 }
 
 // Form data with optional fields
-export type FormData = Partial<FormFields>;
+export type FormData = Partial<AllowedFormFields>;
 
 // Rules definition
 export interface InputRules {
@@ -16,14 +16,25 @@ export interface InputRules {
   isEmail?: boolean;
 }
 
+export type FormInput = {
+  field: keyof AllowedFormFields;
+  value: string;
+  rules: ValidationConstraints;
+};
+export interface InputError extends FormInput {
+  message: string;
+}
+// Possible error origins
+export type ErrorType = 'validation' | 'network' | 'server' | 'system';
+
 export type ValidationConstraints = Partial<InputRules>;
 
 export type ValidatorConstraints = {
-  [K in keyof FormFields]: InputRules;
+  [K in keyof AllowedFormFields]: InputRules;
 };
 
 export type FormRules = {
-  [K in keyof FormFields]?: ValidationConstraints;
+  [K in keyof AllowedFormFields]?: ValidationConstraints;
 };
 
 type SubmitOptions = {
@@ -36,29 +47,58 @@ export interface SubmitProps {
   options?: SubmitOptions;
 }
 
-export interface ValidationError {
+export interface ValidatorResponse {
+  success: boolean;
+  status: number; // 200 si pasa, 400 si falla
   message: string;
-  field: keyof FormFields;
-  value: string;
   type: 'validation';
-  rules?: ValidationConstraints;
+  errors: InputError[] | null;
+  data?: {
+    fields?: FormData;
+    rules?: ValidatorConstraints;
+  };
 }
 
-export interface SystemError {
+export type FormError = {
+  type: 'validation' | 'system';
   message: string;
-  type: 'system';
   data?: unknown;
-}
+};
 
-export type FormError = ValidationError | SystemError;
-
+// Unified form response
 export interface FormResponse {
   success: boolean;
-  data?: FormData;
   status: number;
-  errors?: FormError | FormError[];
-  rules?: FormRules;
-  response?: unknown;
+  message: string;
+  data?: {
+    fields?: FormData | null;
+    url?: string;
+    rules?: ValidatorConstraints;
+  };
+  errors?:
+    | InputError[]
+    | Array<{
+        type: ErrorType;
+        message: string;
+        data?: unknown;
+      }>
+    | null;
 }
 
 export type SubmitResponse = FormResponse;
+
+export interface FormConfig {
+  rules: ValidatorConstraints;
+  endPointPath: string;
+  smtp: {
+    host: string;
+    port: number;
+    user: string;
+    pass: string;
+  };
+  from: string;
+  to: string;
+  sendConfirmation: boolean;
+  rateLimit: number;
+  debug: boolean;
+}

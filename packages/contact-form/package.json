@@ -2,24 +2,22 @@
   "name": "@formpipe/contact-form",
   "version": "0.1.0",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cli/index.cjs",
+  "module": "./dist/browser/index.js",
+  "types": "./dist/browser/index.d.ts",
   "exports": {
     ".": {
+      "import": "./dist/browser/index.js",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.js"
+      "require": "./dist/cli/index.cjs"
     },
     "./cli": {
-      "import": "./dist/cli/src/index.js",
-      "require": "./dist/cli/src/index.cjs"
+      "import": "./dist/cli/index.js",
+      "require": "./dist/cli/index.cjs"
     }
   },
   "files": [
     "dist",
-    "php",
     "README.md",
     "package.json",
     "LICENSE"
@@ -40,7 +38,7 @@
     "sanitization"
   ],
   "bin": {
-    "formpipe": "./dist/cli/src/index.js"
+    "formpipe": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsup",

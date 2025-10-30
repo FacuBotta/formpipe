@@ -1,6 +1,7 @@
 import {
+  AllowedFormFields,
+  FormConfig,
   FormData,
-  FormFields,
   FormResponse,
   FormRules,
   SubmitProps,
@@ -8,64 +9,21 @@ import {
 } from 'src/domain/types';
 import { FormSubmitter } from '../application/services/FormSubmitter';
 import { FormValidator } from '../application/services/FormValidator';
-import { FormConfig, loadConfig } from '../domain/entities/FormConfig';
 
 export class ContactForm {
-  private readonly formpipeConfig: FormConfig;
   private readonly endPointPath: string;
   private readonly validator: FormValidator;
   private readonly submitter: FormSubmitter;
   private readonly formRules: ValidatorConstraints;
   private readonly localStorageKey = 'formpipe-contact-form';
 
-  constructor(rules?: FormRules) {
-    // Load and validate config first
-    const config = loadConfig();
-    if (!config || !config.phpPath) {
-      throw new Error(
-        'No config() set up yet, make sure you run npx formpipe init first'
-      );
+  constructor(config: Pick<FormConfig, 'rules' | 'endPointPath'>) {
+    if (!config || !config.endPointPath || !config.rules) {
+      throw new Error('No config provided');
     }
-    this.formpipeConfig = config;
 
-    // Base rules that will be used if nothing else is provided
-    const defaultRules: ValidatorConstraints = {
-      message: { minLength: 10, maxLength: 300, required: true },
-      replyTo: { minLength: 5, maxLength: 50, required: true },
-      subject: { minLength: 5, maxLength: 100, required: false },
-    };
-
-    // Combine rules for each field individually
-    this.formRules = {
-      message: {
-        ...defaultRules.message,
-        ...this.formpipeConfig.rules?.message,
-        ...rules?.message,
-      },
-      replyTo: {
-        ...defaultRules.replyTo,
-        ...this.formpipeConfig.rules?.replyTo,
-        ...rules?.replyTo,
-      },
-      subject: {
-        ...defaultRules.subject,
-        ...this.formpipeConfig.rules?.subject,
-        ...rules?.subject,
-      },
-    };
-
-    // Normalize baseURL and phpPath
-    const baseURL = (this.formpipeConfig.baseURL || '').endsWith('/')
-      ? this.formpipeConfig.baseURL
-      : `${this.formpipeConfig.baseURL || ''}/`;
-
-    const phpPath =
-      (this.formpipeConfig.phpPath || './php/')
-        .replace(/^\.\//, '') // Remove leading ./
-        .replace(/\/+$/, '') + // Remove trailing slashes
-      '/';
-
-    this.endPointPath = `${baseURL}${phpPath}contact-form.php`;
+    this.formRules = config.rules;
+    this.endPointPath = config.endPointPath;
 
     this.validator = new FormValidator(this.formRules);
     this.submitter = new FormSubmitter(this.endPointPath);
@@ -92,11 +50,20 @@ export class ContactForm {
       return {
         success: false,
         status: 500,
-        errors: {
-          type: 'system',
-          message:
-            'Form validator not initialized. make sure you run npx formpipe init first',
+        message:
+          'Form validator not initialized. make sure you run npx formpipe init first',
+        data: {
+          fields: data,
+          rules: this.formRules,
+          url: this.endPointPath,
         },
+        errors: [
+          {
+            type: 'system',
+            message:
+              'Form validator not initialized. make sure you run npx formpipe init first',
+          },
+        ],
       };
     }
 
@@ -105,7 +72,7 @@ export class ContactForm {
 
     if (rules) {
       Object.keys(rules).forEach((field) => {
-        const key = field as keyof FormFields;
+        const key = field as keyof AllowedFormFields;
         if (rules[key]) {
           combinedRules[key] = {
             ...combinedRules[key],
@@ -115,48 +82,55 @@ export class ContactForm {
       });
     }
 
-    const { errors: validationErrors } = this.validator.validate(
-      data,
-      combinedRules
-    );
-    if (validationErrors.length > 0) {
+    const validatorResponse = this.validator.validate(data, combinedRules);
+    if (!validatorResponse.success) {
       return {
         success: false,
         status: 400,
-        errors: validationErrors.map((error) => ({
-          ...error,
-          type: 'validation' as const,
-        })),
+        message: 'Validation errors',
+        data: {
+          fields: data,
+          rules: this.formRules,
+          url: this.endPointPath,
+        },
+        errors: validatorResponse.errors,
       };
     }
 
     return {
       success: true,
       status: 200,
-      data: data,
+      message: 'Validation successful',
+      data: {
+        fields: data,
+        rules: this.formRules,
+        url: this.endPointPath,
+      },
+      errors: null,
     };
   }
 
   async submit(data: SubmitProps): Promise<FormResponse> {
-    if (!this.formpipeConfig || !this.submitter) {
+    if (!this.endPointPath || !this.formRules || !this.submitter) {
       return {
         success: false,
         status: 500,
-        errors: {
-          type: 'system',
-          message:
-            'No config() set up yet, make sure you run npx formpipe init first',
-          data: null,
+        message:
+          'No config() set up yet, make sure you run npx formpipe init first',
+        data: {
+          fields: data.fields,
+          url: this.endPointPath,
+          rules: this.formRules,
         },
+        errors: [
+          {
+            type: 'system',
+            message:
+              'No config() set up yet, make sure you run npx formpipe init first',
+          },
+        ],
       };
     }
-
-    // Validate first
-    const validationResult = this.validate(data.fields);
-    if (!validationResult.success) {
-      return validationResult;
-    }
-
     // Persist data if requested
     if (data.options?.persistData) {
       const formData = {
@@ -165,6 +139,12 @@ export class ContactForm {
         message: data.fields.message,
       };
       localStorage.setItem(this.localStorageKey, JSON.stringify(formData));
+    }
+
+    // Validate first
+    const validationResult = this.validate(data.fields);
+    if (!validationResult.success) {
+      return validationResult;
     }
 
     try {
@@ -177,10 +157,15 @@ export class ContactForm {
       // If the submitter failed, return the error
       if (!response.success) {
         return {
-          success: false,
+          success: response.success,
           status: response.status,
-          errors: response.errors,
-          response,
+          message: response.message,
+          data: {
+            fields: data.fields,
+            url: this.endPointPath,
+            rules: this.formRules,
+          },
+          errors: response.errors || [],
         };
       }
 
@@ -190,22 +175,33 @@ export class ContactForm {
       }
 
       return {
-        success: true,
+        success: response.success,
         status: response.status,
-        errors: [],
-        data: data.fields,
-        response: response.data,
+        message: response.message,
+        data: {
+          fields: data.fields,
+          url: this.endPointPath,
+          rules: this.formRules,
+        },
+        errors: null,
       };
     } catch (error) {
       return {
         success: false,
         status: 500,
-        data: data.fields,
-        errors: {
-          type: 'system',
-          message: 'Failed to submit form',
-          data: error,
+        data: {
+          fields: data.fields,
+          url: this.endPointPath,
+          rules: this.formRules,
         },
+        message: 'An error occurred while submitting the form',
+        errors: [
+          {
+            type: 'system',
+            message: 'An error occurred while submitting the form',
+            data: error,
+          },
+        ],
       };
     }
   }

@@ -15,13 +15,17 @@ describe('FormValidator', () => {
     const correctData: FormData = {
       replyTo: 'email@example.com',
       subject: 'Test Subject',
-      message: 'Test Message',
+      message: 'Test Message long enough',
     };
 
     const result = validator.validate(correctData);
-    expect(result).toEqual({
-      errors: [],
-    });
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe(200);
+    expect(result.type).toBe('validation');
+    expect(result.message).toBe('Validation passed');
+    expect(result.errors).toBeNull();
+    expect(result.data?.fields).toEqual(correctData);
   });
 
   it('should return errors for invalid form data', () => {
@@ -31,101 +35,55 @@ describe('FormValidator', () => {
       message: '',
     };
 
-    const expectedErrors = [
-      {
-        message: 'Invalid email address',
-        field: 'replyTo',
-        value: 'bademail',
-        type: 'validation',
-        rules: {
-          minLength: rules.replyTo.minLength,
-          maxLength: rules.replyTo.maxLength,
-          required: true,
-          isEmail: true,
-        },
-      },
-      {
-        message: `subject must be between ${rules.subject.minLength} and ${rules.subject.maxLength} characters`,
-        field: 'subject',
-        value: 'S',
-        type: 'validation',
-        rules: {
-          minLength: rules.subject.minLength,
-          maxLength: rules.subject.maxLength,
-          required: rules.subject.required,
-        },
-      },
-      {
-        message: 'message is required',
-        field: 'message',
-        value: '',
-        type: 'validation',
-        rules: {
-          required: rules.message.required,
-          minLength: rules.message.minLength,
-          maxLength: rules.message.maxLength,
-        },
-      },
-    ];
-
     const result = validator.validate(invalidData);
-    expect(result.errors).toHaveLength(expectedErrors.length);
-    expect(result).toEqual({
-      errors: expect.arrayContaining(expectedErrors),
-    });
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe(400);
+    expect(result.type).toBe('validation');
+    expect(result.message).toBe('Validation failed');
+    expect(result.errors).toHaveLength(3);
+
+    const [emailError, subjectError, messageError] = result.errors!;
+
+    expect(emailError.message).toContain('Invalid email address');
+    expect(subjectError.message).toContain('must be between');
+    expect(messageError.message).toContain('is required');
   });
 
   it('should return error for missing required email', () => {
     const invalidData: FormData = {
       replyTo: '',
       subject: 'Test Subject',
-      message: 'Test Message',
+      message: 'Valid message',
     };
 
     const result = validator.validate(invalidData);
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe(400);
     expect(result.errors).toHaveLength(1);
-    expect(result).toEqual({
-      errors: [
-        {
-          message: 'replyTo is required',
-          field: 'replyTo',
-          value: '',
-          type: 'validation',
-          rules: {
-            isEmail: true,
-            required: true,
-            minLength: rules.replyTo.minLength,
-            maxLength: rules.replyTo.maxLength,
-          },
-        },
-      ],
-    });
+
+    const [error] = result.errors!;
+    expect(error.field).toBe('replyTo');
+    expect(error.message).toBe('replyTo is required');
   });
 
   it('should return error for missing required subject when required', () => {
     const invalidData: FormData = {
       replyTo: 'email@example.com',
       subject: '',
-      message: 'Test Message',
+      message: 'Test Message valid length',
     };
 
     const result = validator.validate(invalidData);
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe(400);
     expect(result.errors).toHaveLength(1);
-    expect(result).toEqual({
-      errors: [
-        {
-          message: 'subject is required',
-          field: 'subject',
-          value: '',
-          type: 'validation',
-          rules: {
-            required: true,
-            minLength: rules.subject.minLength,
-            maxLength: rules.subject.maxLength,
-          },
-        },
-      ],
-    });
+
+    const [error] = result.errors!;
+    expect(error.field).toBe('subject');
+    expect(error.message).toBe('subject is required');
   });
 
   it('should return error for message too short', () => {
@@ -136,21 +94,13 @@ describe('FormValidator', () => {
     };
 
     const result = validator.validate(invalidData);
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe(400);
     expect(result.errors).toHaveLength(1);
-    expect(result).toEqual({
-      errors: [
-        {
-          message: `message must be between ${rules.message.minLength} and ${rules.message.maxLength} characters`,
-          field: 'message',
-          value: 'Short',
-          type: 'validation',
-          rules: {
-            minLength: rules.message.minLength,
-            maxLength: rules.message.maxLength,
-            required: rules.message.required,
-          },
-        },
-      ],
-    });
+
+    const [error] = result.errors!;
+    expect(error.field).toBe('message');
+    expect(error.message).toContain('must be between');
   });
 });

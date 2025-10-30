@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { FormConfig } from '../../../domain/entities/FormConfig';
+import { FormConfig } from 'src/domain/types';
 
 function findTemplatePath(): string {
   const searchPaths = [

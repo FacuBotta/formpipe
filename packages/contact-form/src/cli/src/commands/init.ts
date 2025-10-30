@@ -13,13 +13,13 @@ const config: FormConfig = {
     user: '',
     pass: '',
   },
-  baseURL: 'http://localhost:8080',
+  endPointPath: 'http://localhost:8080/php/contact-form.php',
   from: 'no-reply@yoursite.com',
   to: 'contacto@yoursite.com',
   rules: {
-    replyTo: { isEmail: true, required: true },
-    subject: { minLength: 5, maxLength: 100 },
-    message: { minLength: 10, maxLength: 500 },
+    replyTo: { isEmail: true, required: true, maxLength: 100, minLength: 5 },
+    subject: { minLength: 5, maxLength: 100, required: true, isEmail: false },
+    message: { minLength: 10, maxLength: 500, required: true, isEmail: false },
   },
   sendConfirmation: {
     message: 'Thanks for contacting us! We will get back to you soon.',
@@ -27,7 +27,6 @@ const config: FormConfig = {
       'Thanks for contacting us! We will get back to you soon.</h1>',
   },
   rateLimit: 10,
-  phpPath: './php',
   debug: false,
 };
 
