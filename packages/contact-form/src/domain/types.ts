@@ -57,7 +57,7 @@ export interface SystemError {
   message: string;
   data?: unknown;
 }
-export type SubmitterResponse = {
+/* export type SubmitterResponse = {
   success: boolean;
   status: number;
   response: {
@@ -65,7 +65,7 @@ export type SubmitterResponse = {
     errors?: FormError[] | null;
     message?: string;
   };
-};
+}; */
 export type FormError = {
   type: 'validation' | 'system';
   message: string;
@@ -75,11 +75,9 @@ export type FormError = {
 export interface FormResponse {
   success: boolean;
   status: number;
-  response: {
-    data: unknown;
-    errors: unknown[];
-    message?: string;
-  };
+  data: unknown;
+  errors?: unknown;
+  message: string;
 }
 export type SubmitResponse = FormResponse;
 

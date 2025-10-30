@@ -1,26 +1,27 @@
-import { FormData as IFormData, SubmitterResponse } from 'src/domain/types';
+import { FormData as IFormData, SubmitResponse } from 'src/domain/types';
 
 export class FormSubmitter {
   constructor(private readonly url: string) {
     this.url = url;
   }
 
-  async submit(data: IFormData): Promise<SubmitterResponse> {
+  async submit(data: IFormData): Promise<SubmitResponse> {
     if (!this.url) {
       return {
         success: false,
         status: 400,
-        response: {
-          message: 'No endpoint URL provided',
-          data: null,
-          errors: [
-            {
-              type: 'system',
-              message: `No endpoint URL found at ${this.url}`,
-              data: this.url,
-            },
-          ],
+        message: 'No endpoint URL provided',
+        data: {
+          fields: data,
+          url: this.url,
         },
+        errors: [
+          {
+            type: 'system',
+            message: `No endpoint URL found at ${this.url}`,
+            data: this.url,
+          },
+        ],
       };
     }
 
@@ -28,17 +29,18 @@ export class FormSubmitter {
       return {
         success: false,
         status: 401,
-        response: {
-          message: 'replyTo field is required',
-          data: null,
-          errors: [
-            {
-              type: 'validation',
-              message: 'replyTo field is required',
-              data: null,
-            },
-          ],
+        message: 'replyTo field is required',
+        data: {
+          fields: data,
+          url: this.url,
         },
+        errors: [
+          {
+            type: 'validation',
+            message: 'replyTo field is required',
+            data: data.replyTo,
+          },
+        ],
       };
     }
     const fields = [];
@@ -73,32 +75,34 @@ export class FormSubmitter {
         body,
       });
 
-      const responseData = (await sendEmailResult.json()) as SubmitterResponse;
+      const responseData: SubmitResponse = await sendEmailResult.json();
+      console.log(responseData);
       return {
         success: responseData.success,
         status: 200,
-        response: {
-          data: responseData.response.data,
-          errors: null,
-          message: responseData.response.message,
+        message: responseData.message,
+        data: {
+          fields: data,
+          url: this.url,
         },
+        errors: responseData.errors,
       };
     } catch (error: unknown) {
       return {
         success: false,
         status: 500,
-        response: {
-          data: {
-            message: 'Network error occurred while submitting the form',
-            errors: [
-              {
-                type: 'system',
-                message: 'Failed to submit form',
-                data: error,
-              },
-            ],
-          },
+        message: 'Network error occurred while submitting the form',
+        data: {
+          fields: data,
+          url: this.url,
         },
+        errors: [
+          {
+            type: 'system',
+            message: 'Failed to submit form',
+            data: error,
+          },
+        ],
       };
     }
   }

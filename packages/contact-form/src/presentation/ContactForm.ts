@@ -50,19 +50,21 @@ export class ContactForm {
       return {
         success: false,
         status: 500,
-        response: {
-          message:
-            'Form validator not initialized. make sure you run npx formpipe init first',
-          data: null,
-          errors: [
-            {
-              status: 500,
-              type: 'system',
-              message:
-                'Form validator not initialized. make sure you run npx formpipe init first',
-            },
-          ],
+        message:
+          'Form validator not initialized. make sure you run npx formpipe init first',
+        data: {
+          fields: data,
+          rules: this.formRules,
+          url: this.endPointPath,
         },
+        errors: [
+          {
+            status: 500,
+            type: 'system',
+            message:
+              'Form validator not initialized. make sure you run npx formpipe init first',
+          },
+        ],
       };
     }
 
@@ -86,22 +88,26 @@ export class ContactForm {
       return {
         success: false,
         status: 400,
-        response: {
-          message: 'Validation errors',
-          errors: validatorResponse.data,
-          data,
+        message: 'Validation errors',
+        data: {
+          fields: data,
+          rules: this.formRules,
+          url: this.endPointPath,
         },
+        errors: validatorResponse.data,
       };
     }
 
     return {
       success: true,
       status: 200,
-      response: {
-        data,
-        errors: [],
-        message: 'Validation successful',
+      message: 'Validation successful',
+      data: {
+        fields: data,
+        rules: this.formRules,
+        url: this.endPointPath,
       },
+      errors: null,
     };
   }
 
@@ -110,22 +116,20 @@ export class ContactForm {
       return {
         success: false,
         status: 500,
-        response: {
-          message:
-            'No config() set up yet, make sure you run npx formpipe init first',
-          errors: [
-            {
-              status: 500,
-              type: 'system',
-              message:
-                'No config() set up yet, make sure you run npx formpipe init first',
-            },
-          ],
-          data: {
-            endPointPath: this.endPointPath,
-            formRules: this.formRules,
-          },
+        message:
+          'No config() set up yet, make sure you run npx formpipe init first',
+        data: {
+          fields: data.fields,
+          url: this.endPointPath,
+          rules: this.formRules,
         },
+        errors: [
+          {
+            type: 'system',
+            message:
+              'No config() set up yet, make sure you run npx formpipe init first',
+          },
+        ],
       };
     }
     // Persist data if requested
@@ -156,11 +160,13 @@ export class ContactForm {
         return {
           success: response.success,
           status: response.status,
-          response: {
-            data: response.response.data,
-            errors: response.response.errors || [],
-            message: response.response.message,
+          message: response.message,
+          data: {
+            fields: data.fields,
+            url: this.endPointPath,
+            rules: this.formRules,
           },
+          errors: response.errors || [],
         };
       }
 
@@ -171,27 +177,32 @@ export class ContactForm {
 
       return {
         success: response.success,
-        status: 200,
-        response: {
-          data: response.response.data,
-          errors: [],
-          message: response.response.message,
+        status: response.status,
+        message: response.message,
+        data: {
+          fields: data.fields,
+          url: this.endPointPath,
+          rules: this.formRules,
         },
+        errors: null,
       };
     } catch (error) {
       return {
         success: false,
         status: 500,
-        response: {
-          data: error,
-          errors: [
-            {
-              type: 'system',
-              message: 'An error occurred while submitting the form',
-              data: error,
-            },
-          ],
+        data: {
+          fields: data.fields,
+          url: this.endPointPath,
+          rules: this.formRules,
         },
+        message: 'An error occurred while submitting the form',
+        errors: [
+          {
+            type: 'system',
+            message: 'An error occurred while submitting the form',
+            data: error,
+          },
+        ],
       };
     }
   }
