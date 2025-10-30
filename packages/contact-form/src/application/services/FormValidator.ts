@@ -51,7 +51,6 @@ export class FormValidator {
    */
   validate(data: FormData, rules?: ValidatorConstraints): ValidatorResponse {
     const inputErrors: InputError[] = [];
-    // Combine validation rules with instance rules
     const combinedRules = { ...this.formRules, ...rules };
 
     const addError = (
@@ -60,66 +59,58 @@ export class FormValidator {
       message: string,
       rules: ValidationConstraints
     ) => {
-      const inputError: InputError = {
-        field,
-        value,
-        message,
-        rules: {
-          ...rules,
-        },
-      };
-      inputErrors.push(inputError);
+      inputErrors.push({ field, value, message, rules });
     };
 
-    // First check all required fields
     for (const key of Object.keys(combinedRules)) {
       const fieldKey = key as keyof FormData;
       const fieldRules = combinedRules[fieldKey];
       const value = data[fieldKey]?.trim() ?? '';
 
-      // Check required fields
       if (fieldRules?.required && !value) {
-        addError(fieldKey, value, `${key} is required`, {
-          ...fieldRules,
-        });
-        continue; // Skip other validations if required field is missing
-      }
-
-      // Skip other validations if field is empty and not required
-      if (!value) continue;
-
-      // Validate email format for replyTo field
-      if (fieldKey === 'replyTo' && !isEmail(value)) {
-        addError(fieldKey, value, 'Invalid email address', {
-          ...fieldRules,
-        });
-      }
-
-      // Validate string type
-      if (!isString(value)) {
-        addError(fieldKey, value, `Invalid ${key}`, {
-          ...fieldRules,
-        });
+        addError(fieldKey, value, `${key} is required`, fieldRules);
         continue;
       }
 
-      // Validate length constraints
-      if (!isInRange(value, fieldRules?.minLength, fieldRules?.maxLength)) {
+      if (!value) continue;
+
+      if (fieldKey === 'replyTo' && fieldRules.isEmail && !isEmail(value)) {
+        addError(fieldKey, value, 'Invalid email address', fieldRules);
+      }
+
+      if (!isString(value)) {
+        addError(fieldKey, value, `Invalid ${key}`, fieldRules);
+        continue;
+      }
+
+      if (!isInRange(value, fieldRules.minLength, fieldRules.maxLength)) {
         addError(
-          key as keyof FormData,
+          fieldKey,
           value,
           `${key} must be between ${fieldRules.minLength} and ${fieldRules.maxLength} characters`,
-          {
-            ...fieldRules,
-          }
+          fieldRules
         );
       }
     }
 
+    if (inputErrors.length > 0) {
+      return {
+        success: false,
+        status: 400,
+        type: 'validation',
+        message: 'Validation failed',
+        errors: inputErrors,
+        data: { fields: data, rules: combinedRules },
+      };
+    }
+
     return {
-      success: inputErrors.length === 0,
+      success: true,
+      status: 200,
       type: 'validation',
-      data: inputErrors,
+      message: 'Validation passed',
+      errors: null,
+      data: { fields: data, rules: combinedRules },
     };
   }
 }

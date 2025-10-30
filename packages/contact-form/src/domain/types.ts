@@ -24,6 +24,8 @@ export type FormInput = {
 export interface InputError extends FormInput {
   message: string;
 }
+// Possible error origins
+export type ErrorType = 'validation' | 'network' | 'server' | 'system';
 
 export type ValidationConstraints = Partial<InputRules>;
 
@@ -47,38 +49,42 @@ export interface SubmitProps {
 
 export interface ValidatorResponse {
   success: boolean;
+  status: number; // 200 si pasa, 400 si falla
+  message: string;
   type: 'validation';
-  data: FormInput[];
+  errors: InputError[] | null;
+  data?: {
+    fields?: FormData;
+    rules?: ValidatorConstraints;
+  };
 }
 
-export interface SystemError {
-  status: 500;
-  type: 'system';
-  message: string;
-  data?: unknown;
-}
-/* export type SubmitterResponse = {
-  success: boolean;
-  status: number;
-  response: {
-    data: unknown;
-    errors?: FormError[] | null;
-    message?: string;
-  };
-}; */
 export type FormError = {
   type: 'validation' | 'system';
   message: string;
   data?: unknown;
 };
 
+// Unified form response
 export interface FormResponse {
   success: boolean;
   status: number;
-  data: unknown;
-  errors?: unknown;
   message: string;
+  data?: {
+    fields?: FormData | null;
+    url?: string;
+    rules?: ValidatorConstraints;
+  };
+  errors?:
+    | InputError[]
+    | Array<{
+        type: ErrorType;
+        message: string;
+        data?: unknown;
+      }>
+    | null;
 }
+
 export type SubmitResponse = FormResponse;
 
 export interface FormConfig {

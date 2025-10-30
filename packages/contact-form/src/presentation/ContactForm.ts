@@ -59,7 +59,6 @@ export class ContactForm {
         },
         errors: [
           {
-            status: 500,
             type: 'system',
             message:
               'Form validator not initialized. make sure you run npx formpipe init first',
@@ -94,7 +93,7 @@ export class ContactForm {
           rules: this.formRules,
           url: this.endPointPath,
         },
-        errors: validatorResponse.data,
+        errors: validatorResponse.errors,
       };
     }
 

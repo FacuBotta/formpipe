@@ -11,8 +11,9 @@
       "src/*": ["./src/*"]
     },
     "allowImportingTsExtensions": false,
-    "noEmit": false
+    "noEmit": false,
+    "types": ["vitest/globals", "node"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/**/*"],
   "exclude": ["dist", "node_modules"]
 }
