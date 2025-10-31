@@ -5,7 +5,7 @@ A modular ecosystem of npm packages for handling contact forms and email sending
 ## Packages
 
 - [`@formpipe/validators`](https://github.com/FacuBotta/formpipe/tree/main/packages/validators) - Generic validation utilities
-- [`@formpipe/contact-form`](https://github.com/FacuBotta/formpipe/tree/main/packages/contact-form) - Main form handling and email sending functionality
+- [`@formpipe/contact-form`](https://github.com/FacuBotta/formpipe/tree/main/packages/contact-form) - The goal of this project. An out of the box form handler for clasical servers
 
 ### Installations
 
