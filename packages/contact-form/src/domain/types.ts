@@ -1,19 +1,7 @@
-// Base form fields definition
 export interface FormData {
   replyTo: string;
   subject: string;
   message: string;
-}
-
-// Form data with optional fields
-// export type FormData = Partial<AllowedFormFields>;
-
-// Rules definition
-export interface InputRules {
-  minLength: number;
-  maxLength: number;
-  required: boolean;
-  isEmail?: boolean;
 }
 
 export type FormInput = {
@@ -21,11 +9,18 @@ export type FormInput = {
   value: string;
   rules: ValidationConstraints;
 };
+
+export interface InputRules {
+  minLength: number;
+  maxLength: number;
+  required: boolean;
+  isEmail?: boolean;
+}
+
 export interface InputError extends FormInput {
   type: 'validation';
   message: string;
 }
-// Possible error origins
 export type ErrorType = 'validation' | 'network' | 'server' | 'system';
 
 export type ValidationConstraints = Partial<InputRules>;
@@ -35,7 +30,7 @@ export type ValidatorConstraints = {
 };
 
 export type FormRules = {
-  [K in keyof FormData]?: ValidationConstraints;
+  [K in keyof FormData]: ValidationConstraints;
 };
 
 type SubmitOptions = {
@@ -58,14 +53,6 @@ export interface ValidationResponse {
     rules?: ValidatorConstraints;
   };
 }
-
-/* export type FormError = {
-  type: 'validation' | 'system';
-  message: string;
-  data?: unknown;
-}; */
-
-// Unified form response
 export interface FormResponse {
   success: boolean;
   status: number;

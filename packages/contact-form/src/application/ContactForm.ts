@@ -94,7 +94,6 @@ export class ContactForm {
   }
 
   async submit(data: SubmitProps): Promise<FormResponse> {
-    // Take fields object from data to submit
     const { fields } = data;
     if (!this.endPointPath || !this.formRules || !this.submitter || !fields) {
       return {
@@ -117,12 +116,10 @@ export class ContactForm {
       };
     }
 
-    // Persist data if requested
     if (data.options?.persistData) {
       localStorage.setItem(this.localStorageKey, JSON.stringify(fields));
     }
 
-    // Validate first
     const validationResult = this.validate(fields);
     if (!validationResult.success) {
       return validationResult;
@@ -131,7 +128,6 @@ export class ContactForm {
     try {
       const response = await this.submitter.submit(fields);
 
-      // If the submitter failed, return the error
       if (!response.success) {
         return {
           success: response.success,
@@ -146,7 +142,6 @@ export class ContactForm {
         };
       }
 
-      // Clear storage on success if persistence was requested
       if (response?.success && data.options?.persistData) {
         localStorage.removeItem(this.localStorageKey);
       }

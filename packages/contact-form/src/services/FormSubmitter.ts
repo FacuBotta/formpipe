@@ -43,7 +43,6 @@ export class FormSubmitter {
         );
       }
 
-      // --- Handle known error structures ---
       if (!response.ok) {
         switch (response.status) {
           case 400:

@@ -13,7 +13,9 @@ try {
   } else {
     console.log('Usage:');
     console.log('❯ npx formpipe init     # Create formpipe.config.json');
-    console.log('❯ npx formpipe generate # Generate contact-form.php');
+    console.log(
+      '❯ npx formpipe generate # Generate a new php folder - fields will be replaced if they already exist'
+    );
   }
 } catch (error) {
   if (error instanceof Error) {
