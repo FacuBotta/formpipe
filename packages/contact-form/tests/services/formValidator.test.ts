@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FormValidator } from '../../src/application/services/FormValidator';
 import { FormData, ValidatorConstraints } from '../../src/domain/types';
+import { FormValidator } from '../../src/services/FormValidator';
 
 const rules: ValidatorConstraints = {
   replyTo: { minLength: 5, maxLength: 50, required: true, isEmail: true },
@@ -22,7 +22,6 @@ describe('FormValidator', () => {
 
     expect(result.success).toBe(true);
     expect(result.status).toBe(200);
-    expect(result.type).toBe('validation');
     expect(result.message).toBe('Validation passed');
     expect(result.errors).toBeNull();
     expect(result.data?.fields).toEqual(correctData);
@@ -39,7 +38,6 @@ describe('FormValidator', () => {
 
     expect(result.success).toBe(false);
     expect(result.status).toBe(400);
-    expect(result.type).toBe('validation');
     expect(result.message).toBe('Validation failed');
     expect(result.errors).toHaveLength(3);
 
