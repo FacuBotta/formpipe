@@ -3,11 +3,10 @@ import {
   FormMainConfig,
   FormResponse,
   SubmitProps,
-  ValidationResponse,
   ValidatorConstraints,
 } from 'src/domain/types';
-import { FormSubmitter } from '../application/services/FormSubmitter';
-import { FormValidator } from '../application/services/FormValidator';
+import { FormSubmitter } from '../services/FormSubmitter';
+import { FormValidator } from '../services/FormValidator';
 
 export class ContactForm {
   private readonly endPointPath: string;
@@ -66,7 +65,7 @@ export class ContactForm {
       };
     }
 
-    const validatorResponse: ValidationResponse = this.validator.validate(data);
+    const validatorResponse: FormResponse = this.validator.validate(data);
     if (!validatorResponse.success) {
       return {
         success: false,

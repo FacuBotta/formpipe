@@ -52,7 +52,6 @@ export interface ValidationResponse {
   success: boolean;
   status: number;
   message: string;
-  type: 'validation';
   errors: InputError[] | null;
   data?: {
     fields?: FormData;
