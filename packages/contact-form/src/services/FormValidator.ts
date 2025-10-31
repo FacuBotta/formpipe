@@ -1,9 +1,9 @@
 import { isEmail, isInRange, isString } from '@formpipe/validators';
 import {
   FormData,
+  FormResponse,
   InputError,
   ValidationConstraints,
-  ValidationResponse,
   ValidatorConstraints,
 } from 'src/domain/types';
 
@@ -35,7 +35,7 @@ export class FormValidator {
    *   message: 'Test Message'
    * });
    */
-  validate(data: FormData): ValidationResponse {
+  validate(data: FormData): FormResponse {
     const inputErrors: InputError[] = [];
 
     const addError = (
@@ -43,7 +43,7 @@ export class FormValidator {
       value: string,
       message: string,
       rules: ValidationConstraints,
-      type: InputError['type'] = 'validation'
+      type: 'validation' = 'validation'
     ) => {
       inputErrors.push({ field, value, message, rules, type });
     };
@@ -83,7 +83,6 @@ export class FormValidator {
       return {
         success: false,
         status: 400,
-        type: 'validation',
         message: 'Validation failed',
         errors: inputErrors,
         data: { fields: data, rules: this.rules },
@@ -93,7 +92,6 @@ export class FormValidator {
     return {
       success: true,
       status: 200,
-      type: 'validation',
       message: 'Validation passed',
       errors: null,
       data: { fields: data, rules: this.rules },
