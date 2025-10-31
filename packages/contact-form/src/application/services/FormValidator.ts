@@ -3,8 +3,8 @@ import {
   FormData,
   InputError,
   ValidationConstraints,
+  ValidationResponse,
   ValidatorConstraints,
-  ValidatorResponse,
 } from 'src/domain/types';
 
 /**
@@ -35,16 +35,17 @@ export class FormValidator {
    *   message: 'Test Message'
    * });
    */
-  validate(data: FormData): ValidatorResponse {
+  validate(data: FormData): ValidationResponse {
     const inputErrors: InputError[] = [];
 
     const addError = (
       field: keyof FormData,
       value: string,
       message: string,
-      rules: ValidationConstraints
+      rules: ValidationConstraints,
+      type: InputError['type'] = 'validation'
     ) => {
-      inputErrors.push({ field, value, message, rules });
+      inputErrors.push({ field, value, message, rules, type });
     };
 
     for (const key of Object.keys(this.rules)) {

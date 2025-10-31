@@ -1,12 +1,12 @@
 // Base form fields definition
-export interface AllowedFormFields {
+export interface FormData {
   replyTo: string;
   subject: string;
   message: string;
 }
 
 // Form data with optional fields
-export type FormData = Partial<AllowedFormFields>;
+// export type FormData = Partial<AllowedFormFields>;
 
 // Rules definition
 export interface InputRules {
@@ -17,11 +17,12 @@ export interface InputRules {
 }
 
 export type FormInput = {
-  field: keyof AllowedFormFields;
+  field: keyof FormData;
   value: string;
   rules: ValidationConstraints;
 };
 export interface InputError extends FormInput {
+  type: 'validation';
   message: string;
 }
 // Possible error origins
@@ -30,11 +31,11 @@ export type ErrorType = 'validation' | 'network' | 'server' | 'system';
 export type ValidationConstraints = Partial<InputRules>;
 
 export type ValidatorConstraints = {
-  [K in keyof AllowedFormFields]: InputRules;
+  [K in keyof FormData]: InputRules;
 };
 
 export type FormRules = {
-  [K in keyof AllowedFormFields]?: ValidationConstraints;
+  [K in keyof FormData]?: ValidationConstraints;
 };
 
 type SubmitOptions = {
@@ -47,7 +48,7 @@ export interface SubmitProps {
   options?: SubmitOptions;
 }
 
-export interface ValidatorResponse {
+export interface ValidationResponse {
   success: boolean;
   status: number; // 200 si pasa, 400 si falla
   message: string;
@@ -59,11 +60,11 @@ export interface ValidatorResponse {
   };
 }
 
-export type FormError = {
+/* export type FormError = {
   type: 'validation' | 'system';
   message: string;
   data?: unknown;
-};
+}; */
 
 // Unified form response
 export interface FormResponse {
@@ -85,11 +86,12 @@ export interface FormResponse {
     | null;
 }
 
-export type SubmitResponse = FormResponse;
-
 export interface FormConfig {
   rules: ValidatorConstraints;
   endPointPath: string;
+}
+
+export interface FormMainConfig extends FormConfig {
   smtp: {
     host: string;
     port: number;
@@ -101,8 +103,4 @@ export interface FormConfig {
   sendConfirmation: boolean;
   rateLimit: number;
   debug: boolean;
-}
-export interface FormRulesAndPath {
-  rules: ValidatorConstraints;
-  endPointPath: string;
 }

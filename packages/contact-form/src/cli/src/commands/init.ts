@@ -1,12 +1,12 @@
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { FormConfig } from 'src/domain/types';
+import { FormMainConfig } from 'src/domain/types';
 
 // Get project root directory (where the command is being run)
 const projectRoot = process.cwd();
 const configPath = join(projectRoot, 'formpipe.config.json');
 
-const config: FormConfig = {
+const config: FormMainConfig = {
   smtp: {
     host: 'mailpit',
     port: 1025,

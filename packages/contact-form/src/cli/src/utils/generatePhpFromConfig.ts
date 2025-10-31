@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { FormConfig } from 'src/domain/types';
+import { FormMainConfig } from 'src/domain/types';
 
 function findTemplatePath(): string {
   const searchPaths = [
@@ -37,7 +37,7 @@ function jsonToPhpArray(value: unknown, indent = 0): string {
 }
 
 export function generatePhpFromConfig(
-  config: FormConfig,
+  config: FormMainConfig,
   phpMainFile: string
 ): void {
   const templatePath = findTemplatePath();

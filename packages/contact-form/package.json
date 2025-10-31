@@ -8,7 +8,7 @@
   "exports": {
     ".": {
       "import": "./dist/browser/index.js",
-      "types": "./dist/index.d.ts",
+      "types": "./dist/browser/index.d.ts",
       "require": "./dist/cli/index.cjs"
     },
     "./cli": {
