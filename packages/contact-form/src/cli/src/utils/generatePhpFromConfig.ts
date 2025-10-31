@@ -4,9 +4,9 @@ import { FormMainConfig } from 'src/domain/types';
 
 function findTemplatePath(): string {
   const searchPaths = [
-    resolve(__dirname, '../php/contact-form.template.php'), // dist
-    resolve(__dirname, '../../../../../php/contact-form.template.php'), // src
-    resolve(__dirname, '../../php/contact-form.template.php'), // fallback
+    resolve(__dirname, '../php/contact-form.php'), // dist
+    resolve(__dirname, '../../../../../php/contact-form.php'), // src
+    resolve(__dirname, '../../php/contact-form.php'), // fallback
   ];
 
   for (const path of searchPaths) {

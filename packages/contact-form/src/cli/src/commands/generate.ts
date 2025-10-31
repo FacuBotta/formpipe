@@ -36,12 +36,12 @@ export default async function generate() {
 }
 
 function generateConfigToExport(config: FormConfig, projectPhpFolder: string) {
-  const configContent = `export const FormMainConfig = ${JSON.stringify(
+  const configContent = `export const formConfig = ${JSON.stringify(
     config,
     null,
     2
   )};`;
-  const configPath = path.join(projectPhpFolder, 'FormMainConfig.ts');
+  const configPath = path.join(projectPhpFolder, 'form-config.ts');
   fs.writeFileSync(configPath, configContent);
 }
 
