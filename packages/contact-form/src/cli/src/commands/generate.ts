@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { FormConfig, FormRulesAndPath } from 'src/domain/types';
+import { FormConfig, FormMainConfig } from 'src/domain/types';
 import { copyPhpFolder } from '../utils/copyPhpFolder';
 import { generatePhpFromConfig } from '../utils/generatePhpFromConfig';
 import { loadConfig } from '../utils/loadConfig';
@@ -9,7 +9,7 @@ export default async function generate() {
   console.log('🚀 Running formpipe generate...\n');
 
   const projectRoot = process.cwd();
-  const config: FormConfig = loadConfig();
+  const config: FormMainConfig = loadConfig();
 
   // Busca la carpeta php dentro del paquete
   const packagePhpFolder = findPackagePhpFolder(__dirname);
@@ -23,7 +23,7 @@ export default async function generate() {
     generatePhpFromConfig(config, projectPhpMainFile);
     console.log(`✅ Generated PHP form:\n   ${projectPhpMainFile}\n`);
 
-    const rulesAndPath: FormRulesAndPath = {
+    const rulesAndPath: FormConfig = {
       rules: config.rules,
       endPointPath: config.endPointPath,
     };
@@ -35,16 +35,13 @@ export default async function generate() {
   }
 }
 
-function generateConfigToExport(
-  config: FormRulesAndPath,
-  projectPhpFolder: string
-) {
+function generateConfigToExport(config: FormConfig, projectPhpFolder: string) {
   const configContent = `export const formConfig = ${JSON.stringify(
     config,
     null,
     2
   )};`;
-  const configPath = path.join(projectPhpFolder, 'formConfig.ts');
+  const configPath = path.join(projectPhpFolder, 'form-config.ts');
   fs.writeFileSync(configPath, configContent);
 }
 

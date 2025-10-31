@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FormSubmitter } from '../../src/application/services/FormSubmitter';
 import { FormData } from '../../src/domain/types';
+import { FormSubmitter } from '../../src/services/FormSubmitter';
 
 const mockUrl = 'https://example.com/contact-form.php';
 

@@ -1,10 +1,10 @@
 import { isEmail, isInRange, isString } from '@formpipe/validators';
 import {
   FormData,
+  FormResponse,
   InputError,
   ValidationConstraints,
   ValidatorConstraints,
-  ValidatorResponse,
 } from 'src/domain/types';
 
 /**
@@ -35,16 +35,17 @@ export class FormValidator {
    *   message: 'Test Message'
    * });
    */
-  validate(data: FormData): ValidatorResponse {
+  validate(data: FormData): FormResponse {
     const inputErrors: InputError[] = [];
 
     const addError = (
       field: keyof FormData,
       value: string,
       message: string,
-      rules: ValidationConstraints
+      rules: ValidationConstraints,
+      type: 'validation' = 'validation'
     ) => {
-      inputErrors.push({ field, value, message, rules });
+      inputErrors.push({ field, value, message, rules, type });
     };
 
     for (const key of Object.keys(this.rules)) {
@@ -82,7 +83,6 @@ export class FormValidator {
       return {
         success: false,
         status: 400,
-        type: 'validation',
         message: 'Validation failed',
         errors: inputErrors,
         data: { fields: data, rules: this.rules },
@@ -92,7 +92,6 @@ export class FormValidator {
     return {
       success: true,
       status: 200,
-      type: 'validation',
       message: 'Validation passed',
       errors: null,
       data: { fields: data, rules: this.rules },

@@ -3,11 +3,8 @@ import { resolve } from 'path';
 import { defineConfig } from 'tsup';
 
 export default defineConfig([
-  /**
-   * Build para navegador (ContactForm)
-   */
   {
-    entry: ['src/index.ts'], // tu export principal de ContactForm
+    entry: ['src/index.ts'],
     format: ['esm'],
     target: 'esnext',
     dts: true,
@@ -15,20 +12,16 @@ export default defineConfig([
     minify: true,
     sourcemap: true,
     outDir: 'dist/browser',
-    platform: 'browser', // <- importante
+    platform: 'browser',
     shims: true,
     noExternal: [/.*/],
   },
-
-  /**
-   * Build para Node (CLI)
-   */
   {
-    entry: ['src/cli/src/index.ts'], // tu CLI
+    entry: ['src/cli/src/index.ts'],
     format: ['esm', 'cjs'],
     target: 'node16',
     dts: true,
-    clean: false, // no borramos lo del build anterior
+    clean: false,
     minify: true,
     sourcemap: true,
     outDir: 'dist/cli',
@@ -41,7 +34,6 @@ export default defineConfig([
       };
     },
     onSuccess: async () => {
-      // Copiamos la carpeta php solo para Node/CLI
       const sourceDir = resolve('php');
       const destDir = resolve('dist/php');
       try {

@@ -1,9 +1,9 @@
-import { ErrorType, FormData, SubmitResponse } from 'src/domain/types';
+import { ErrorType, FormData, FormResponse } from 'src/domain/types';
 
 export class FormSubmitter {
   constructor(private readonly url: string) {}
 
-  async submit(data: FormData): Promise<SubmitResponse> {
+  async submit(data: FormData): Promise<FormResponse> {
     if (!this.url) {
       return this.errorResponse(
         400,
@@ -113,7 +113,7 @@ export class FormSubmitter {
     message: string,
     type: ErrorType,
     data?: unknown
-  ): SubmitResponse {
+  ): FormResponse {
     return {
       success: false,
       status: status || 500,

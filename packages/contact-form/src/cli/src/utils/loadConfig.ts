@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
-import { FormConfig } from 'src/domain/types';
+import { FormMainConfig } from 'src/domain/types';
 
-export const loadConfig = (): FormConfig => {
+export const loadConfig = (): FormMainConfig => {
   try {
     return JSON.parse(readFileSync('formpipe.config.json', 'utf8'));
   } catch {

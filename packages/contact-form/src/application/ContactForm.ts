@@ -1,6 +1,6 @@
 import {
+  FormConfig,
   FormData,
-  FormMainConfig,
   FormResponse,
   SubmitProps,
   ValidatorConstraints,
@@ -15,7 +15,7 @@ export class ContactForm {
   private readonly formRules: ValidatorConstraints;
   private readonly localStorageKey = 'formpipe-contact-form';
 
-  constructor(config: Pick<FormMainConfig, 'rules' | 'endPointPath'>) {
+  constructor(config: Pick<FormConfig, 'rules' | 'endPointPath'>) {
     if (!config || !config.endPointPath || !config.rules) {
       throw new Error('No config provided');
     }
@@ -65,7 +65,7 @@ export class ContactForm {
       };
     }
 
-    const validatorResponse: FormResponse = this.validator.validate(data);
+    const validatorResponse = this.validator.validate(data);
     if (!validatorResponse.success) {
       return {
         success: false,
