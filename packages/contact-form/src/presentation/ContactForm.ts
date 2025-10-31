@@ -1,9 +1,7 @@
 import {
-  AllowedFormFields,
   FormConfig,
   FormData,
   FormResponse,
-  FormRules,
   SubmitProps,
   ValidatorConstraints,
 } from 'src/domain/types';
@@ -45,7 +43,7 @@ export class ContactForm {
    *   message: 'Test message'
    * });
    */
-  validate(data: FormData, rules?: FormRules): FormResponse {
+  validate(data: FormData): FormResponse {
     if (!this.validator) {
       return {
         success: false,
@@ -67,22 +65,7 @@ export class ContactForm {
       };
     }
 
-    // Combine instance rules with ad-hoc rules if provided
-    const combinedRules: ValidatorConstraints = { ...this.formRules };
-
-    if (rules) {
-      Object.keys(rules).forEach((field) => {
-        const key = field as keyof AllowedFormFields;
-        if (rules[key]) {
-          combinedRules[key] = {
-            ...combinedRules[key],
-            ...rules[key],
-          };
-        }
-      });
-    }
-
-    const validatorResponse = this.validator.validate(data, combinedRules);
+    const validatorResponse = this.validator.validate(data);
     if (!validatorResponse.success) {
       return {
         success: false,
@@ -111,14 +94,16 @@ export class ContactForm {
   }
 
   async submit(data: SubmitProps): Promise<FormResponse> {
-    if (!this.endPointPath || !this.formRules || !this.submitter) {
+    // Take fields object from data to submit
+    const { fields } = data;
+    if (!this.endPointPath || !this.formRules || !this.submitter || !fields) {
       return {
         success: false,
         status: 500,
         message:
           'No config() set up yet, make sure you run npx formpipe init first',
         data: {
-          fields: data.fields,
+          fields,
           url: this.endPointPath,
           rules: this.formRules,
         },
@@ -131,28 +116,20 @@ export class ContactForm {
         ],
       };
     }
+
     // Persist data if requested
     if (data.options?.persistData) {
-      const formData = {
-        replyTo: data.fields.replyTo,
-        subject: data.fields.subject,
-        message: data.fields.message,
-      };
-      localStorage.setItem(this.localStorageKey, JSON.stringify(formData));
+      localStorage.setItem(this.localStorageKey, JSON.stringify(fields));
     }
 
     // Validate first
-    const validationResult = this.validate(data.fields);
+    const validationResult = this.validate(fields);
     if (!validationResult.success) {
       return validationResult;
     }
 
     try {
-      const response = await this.submitter.submit({
-        replyTo: data.fields.replyTo,
-        subject: data.fields.subject,
-        message: data.fields.message,
-      });
+      const response = await this.submitter.submit(fields);
 
       // If the submitter failed, return the error
       if (!response.success) {
@@ -161,7 +138,7 @@ export class ContactForm {
           status: response.status,
           message: response.message,
           data: {
-            fields: data.fields,
+            fields,
             url: this.endPointPath,
             rules: this.formRules,
           },
@@ -179,7 +156,7 @@ export class ContactForm {
         status: response.status,
         message: response.message,
         data: {
-          fields: data.fields,
+          fields,
           url: this.endPointPath,
           rules: this.formRules,
         },
@@ -190,7 +167,7 @@ export class ContactForm {
         success: false,
         status: 500,
         data: {
-          fields: data.fields,
+          fields,
           url: this.endPointPath,
           rules: this.formRules,
         },

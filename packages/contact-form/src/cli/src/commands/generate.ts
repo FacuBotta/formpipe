@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { FormConfig } from 'src/domain/types';
+import { FormConfig, FormRulesAndPath } from 'src/domain/types';
 import { copyPhpFolder } from '../utils/copyPhpFolder';
 import { generatePhpFromConfig } from '../utils/generatePhpFromConfig';
 import { loadConfig } from '../utils/loadConfig';
@@ -22,10 +22,30 @@ export default async function generate() {
 
     generatePhpFromConfig(config, projectPhpMainFile);
     console.log(`✅ Generated PHP form:\n   ${projectPhpMainFile}\n`);
+
+    const rulesAndPath: FormRulesAndPath = {
+      rules: config.rules,
+      endPointPath: config.endPointPath,
+    };
+    generateConfigToExport(rulesAndPath, projectPhpFolder);
+    console.log(`✅ Generated confit.ts at:\n   ${projectPhpMainFile}\n`);
   } catch (error) {
     console.error('❌ Error during generation:', error);
     process.exit(1);
   }
+}
+
+function generateConfigToExport(
+  config: FormRulesAndPath,
+  projectPhpFolder: string
+) {
+  const configContent = `export const formConfig = ${JSON.stringify(
+    config,
+    null,
+    2
+  )};`;
+  const configPath = path.join(projectPhpFolder, 'formConfig.ts');
+  fs.writeFileSync(configPath, configContent);
 }
 
 /**

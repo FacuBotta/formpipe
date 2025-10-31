@@ -102,3 +102,7 @@ export interface FormConfig {
   rateLimit: number;
   debug: boolean;
 }
+export interface FormRulesAndPath {
+  rules: ValidatorConstraints;
+  endPointPath: string;
+}
