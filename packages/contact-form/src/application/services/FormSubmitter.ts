@@ -37,7 +37,8 @@ export class FormSubmitter {
           'Invalid JSON response from server',
           'server',
           {
-            body,
+            payload,
+            response,
           }
         );
       }

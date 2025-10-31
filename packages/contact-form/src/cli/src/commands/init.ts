@@ -1,6 +1,6 @@
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { FormConfig } from 'src/domain/entities/FormConfig';
+import { FormConfig } from 'src/domain/types';
 
 // Get project root directory (where the command is being run)
 const projectRoot = process.cwd();
@@ -21,11 +21,7 @@ const config: FormConfig = {
     subject: { minLength: 5, maxLength: 100, required: true, isEmail: false },
     message: { minLength: 10, maxLength: 500, required: true, isEmail: false },
   },
-  sendConfirmation: {
-    message: 'Thanks for contacting us! We will get back to you soon.',
-    htmlTemplate:
-      'Thanks for contacting us! We will get back to you soon.</h1>',
-  },
+  sendConfirmation: false,
   rateLimit: 10,
   debug: false,
 };
