@@ -50,7 +50,7 @@ export interface SubmitProps {
 
 export interface ValidationResponse {
   success: boolean;
-  status: number; // 200 si pasa, 400 si falla
+  status: number;
   message: string;
   type: 'validation';
   errors: InputError[] | null;

@@ -48,9 +48,9 @@ php
 └── PHPMailer // A ready to use PHPMailer instance
 ```
 
-### 3. Front integration - Basic exemple
+### 3. Methods
 
-The `ContactForm` object have some useful:
+The `ContactForm` object have some useful methods:
 
 #### `validate()`
 
@@ -68,9 +68,11 @@ The `ContactForm` object have some useful:
 
 - Return the fields values used in the submit only if submission fails.
 
-### `clearStorage()`
+#### `clearStorage()`
 
 - Clear de localStorage if field's data are presents
+
+### 4. Front integration - Basic exemple
 
 ```typescript
 import {
