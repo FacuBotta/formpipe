@@ -31,7 +31,7 @@ and follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 
 ---
 
-## [0.1.2] - 2025-10-10
+## [0.1.2] - 2025-10-18
 
 ### Fixed
 
@@ -40,7 +40,7 @@ and follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 
 ---
 
-## [0.1.1] - 2025-10-03
+## [0.1.1] - 2025-10-18
 
 ### Fixed
 
@@ -48,7 +48,7 @@ and follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 
 ---
 
-## [0.1.0] - 2025-09-29
+## [0.1.0] - 2025-10-18
 
 ### Added
 
