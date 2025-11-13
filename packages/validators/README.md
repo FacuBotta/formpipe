@@ -16,7 +16,6 @@ npm install @formpipe/validators
 
 ## Usage
 
-
 ### isEmail(value: unknown): boolean
 
 Validates if a value is a properly formatted email address.
@@ -103,16 +102,32 @@ escapeHtml('Quote "test" & <tags>');
 // "Quote &quot;test&quot; &amp; &lt;tags&gt;"
 ````
 
-## TypeScript Support
+### `isPhone(value: string, mode?: 'loose' | 'strict' | 'e164'): boolean`
 
-This package includes TypeScript type definitions. The `isString` function includes a type guard that will narrow the type in TypeScript when used in a conditional.
+Validates whether a string is a valid phone number according to the selected validation mode.
+
+Supported modes:
+
+- 'e164' (default): Follows the international E.164 standard — optional +, 8–15 digits, cannot start with 0.
+
+- 'strict': Digits only (0–9), minimum 8 and maximum 15 characters.
+
+- 'loose': Allows spaces, +, parentheses, and hyphens — requires at least 8 digits.
 
 ```typescript
-const value: unknown = 'test';
-if (isString(value)) {
-  // value is typed as string here
-  console.log(value.toUpperCase());
-}
+import { isPhone } from '@formpipe/validators';
+
+// E.164 format (default)
+isPhone('+14155552671'); // true
+isPhone('0000000'); // false
+
+// Strict mode: digits only
+isPhone('1234567890', 'strict'); // true
+isPhone('+1234567890', 'strict'); // false
+
+// Loose mode: allows spaces, parentheses, and hyphens
+isPhone('(123) 456-7890', 'loose'); // true
+isPhone('+34 600 123 456', 'loose'); // true
 ```
 
 ## Contributing
