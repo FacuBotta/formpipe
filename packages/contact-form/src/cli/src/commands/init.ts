@@ -18,8 +18,9 @@ const config: FormMainConfig = {
   to: 'contacto@yoursite.com',
   rules: {
     replyTo: { isEmail: true, required: true, maxLength: 100, minLength: 5 },
-    subject: { minLength: 5, maxLength: 100, required: true, isEmail: false },
-    message: { minLength: 10, maxLength: 500, required: true, isEmail: false },
+    subject: { minLength: 5, maxLength: 100, required: true },
+    message: { minLength: 10, maxLength: 500, required: true },
+    phoneNumber: { phoneValidationMode: 'e164', required: false },
   },
   sendConfirmation: false,
   rateLimit: 10,
