@@ -1,6 +1,6 @@
 {
   "name": "@formpipe/validators",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "type": "module",
@@ -9,7 +9,8 @@
     "dist",
     "README.md",
     "package.json",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG"
   ],
   "description": "A collection of validators and sanitizers for form inputs in TypeScript.",
   "repository": {

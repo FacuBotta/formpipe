@@ -2,7 +2,7 @@ export interface FormData {
   replyTo: string;
   subject: string;
   message: string;
-  phoneNumber: string;
+  phoneNumber?: string;
 }
 
 export type FormInput = {

@@ -6,6 +6,21 @@ and follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 
 ---
 
+## [0.1.5] - 2025-11-20
+
+### Fixed
+
+- `isPhone` validator wasn't correctly exported in the last release - Now it's available!.
+
+### Added
+
+- New `isPhone` validator with support for multiple validation modes:
+  - `'e164'` (default): International standard format.
+  - `'strict'`: Digits only, 8–15 characters.
+  - `'loose'`: Allows spaces, `+`, parentheses, and hyphens.
+
+---
+
 ## [0.1.4] - 2025-11-13
 
 ### Added

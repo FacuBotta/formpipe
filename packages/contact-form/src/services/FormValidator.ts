@@ -53,6 +53,8 @@ export class FormValidator {
       const fieldRules = this.rules[fieldKey];
       const value = data[fieldKey]?.trim() ?? '';
 
+      if (!fieldRules) continue;
+
       if (fieldRules.required && !value) {
         addError(fieldKey, value, `${key} is required`, fieldRules);
         continue;
@@ -60,7 +62,7 @@ export class FormValidator {
 
       if (!value) continue;
 
-      if (fieldKey === 'replyTo' && fieldRules.isEmail && !isEmail(value)) {
+      if (fieldKey === 'replyTo' && !isEmail(value)) {
         addError(fieldKey, value, 'Invalid email address', fieldRules);
       }
       if (
