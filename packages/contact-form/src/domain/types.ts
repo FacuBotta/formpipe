@@ -2,6 +2,7 @@ export interface FormData {
   replyTo: string;
   subject: string;
   message: string;
+  phoneNumber?: string;
 }
 
 export type FormInput = {
@@ -10,11 +11,14 @@ export type FormInput = {
   rules: ValidationConstraints;
 };
 
+export type PhoneValidationMode = 'loose' | 'strict' | 'e164';
+
 export interface InputRules {
-  minLength: number;
-  maxLength: number;
-  required: boolean;
+  minLength?: number;
+  maxLength?: number;
+  required?: boolean;
   isEmail?: boolean;
+  phoneValidationMode?: PhoneValidationMode;
 }
 
 export interface InputError extends FormInput {

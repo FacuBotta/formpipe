@@ -1,4 +1,4 @@
-import { isEmail, isInRange, isString } from '@formpipe/validators';
+import { isEmail, isInRange, isPhone, isString } from '@formpipe/validators';
 import {
   FormData,
   FormResponse,
@@ -53,15 +53,24 @@ export class FormValidator {
       const fieldRules = this.rules[fieldKey];
       const value = data[fieldKey]?.trim() ?? '';
 
-      if (fieldRules?.required && !value) {
+      if (!fieldRules) continue;
+
+      if (fieldRules.required && !value) {
         addError(fieldKey, value, `${key} is required`, fieldRules);
         continue;
       }
 
       if (!value) continue;
 
-      if (fieldKey === 'replyTo' && fieldRules.isEmail && !isEmail(value)) {
+      if (fieldKey === 'replyTo' && !isEmail(value)) {
         addError(fieldKey, value, 'Invalid email address', fieldRules);
+      }
+      if (
+        fieldKey === 'phoneNumber' &&
+        fieldRules.phoneValidationMode &&
+        !isPhone(value, fieldRules.phoneValidationMode || 'e164')
+      ) {
+        addError(fieldKey, value, 'Invalid phone number', fieldRules);
       }
 
       if (!isString(value)) {
@@ -69,7 +78,11 @@ export class FormValidator {
         continue;
       }
 
-      if (!isInRange(value, fieldRules.minLength, fieldRules.maxLength)) {
+      if (
+        fieldRules.minLength &&
+        fieldRules.maxLength &&
+        !isInRange(value, fieldRules.minLength, fieldRules.maxLength)
+      ) {
         addError(
           fieldKey,
           value,
