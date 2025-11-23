@@ -30,10 +30,12 @@ export type ErrorType = 'validation' | 'network' | 'server' | 'system';
 export type ValidationConstraints = Partial<InputRules>;
 
 export type ValidatorConstraints = {
+  // eslint-disable-next-line no-unused-vars
   [K in keyof FormData]: InputRules;
 };
 
 export type FormRules = {
+  // eslint-disable-next-line no-unused-vars
   [K in keyof FormData]: ValidationConstraints;
 };
 
@@ -92,5 +94,4 @@ export interface FormMainConfig extends FormConfig {
   to: string;
   sendConfirmation: boolean;
   rateLimit: number;
-  debug: boolean;
 }

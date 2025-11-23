@@ -68,7 +68,7 @@ export class FormValidator {
       if (
         fieldKey === 'phoneNumber' &&
         fieldRules.phoneValidationMode &&
-        !isPhone(value, fieldRules.phoneValidationMode || 'e164')
+        !isPhone(value, fieldRules.phoneValidationMode)
       ) {
         addError(fieldKey, value, 'Invalid phone number', fieldRules);
       }
