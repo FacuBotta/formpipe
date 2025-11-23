@@ -41,6 +41,31 @@ function shouldUseSMTPAuth($smtpConfig)
   return !empty($smtpConfig["user"]) && !empty($smtpConfig["pass"]);
 }
 
+// Helper function to validate phone numbers (replicates isPhone.ts logic)
+function isPhone($value, $mode = 'e164')
+{
+  if (empty($value)) {
+    return false;
+  }
+
+  $normalized = trim($value);
+
+  switch ($mode) {
+    case 'loose':
+      // Allows spaces, '+', parentheses, and hyphens; requires at least 8 digits.
+      return preg_match('/^[\d\s()+-]{8,}$/', $normalized) === 1;
+
+    case 'strict':
+      // Only digits; minimum 8 and maximum 15 characters.
+      return preg_match('/^\d{8,15}$/', $normalized) === 1;
+
+    case 'e164':
+    default:
+      // International E.164 format: optional '+', followed by 8–15 digits, cannot start with 0.
+      return preg_match('/^\+?[1-9]\d{7,14}$/', $normalized) === 1;
+  }
+}
+
 // Helper function to validate a field and return array of error messages
 function validateField($field, $value, $rules)
 {
@@ -61,6 +86,25 @@ function validateField($field, $value, $rules)
 
     if (isset($rules["isEmail"]) && $rules["isEmail"] && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
       $errs[] = ucfirst($field) . " must be a valid email address";
+    }
+
+    // Validate phone number if phoneValidationMode is set (replicates FormValidator.ts logic)
+    if ($field === "phoneNumber" && isset($rules["phoneValidationMode"])) {
+      $mode = $rules["phoneValidationMode"];
+      if (!isPhone($value, $mode)) {
+        // Set message according to the mode and add an example of a valid phone number
+        switch ($mode) {
+          case 'e164':
+            $errs[] = ucfirst($field) . " must be a valid E.164 phone number (e.g. +1234567890)";
+            break;
+          case 'strict':
+            $errs[] = ucfirst($field) . " must be a valid phone number (8-15 digits)";
+            break;
+          case 'loose':
+            $errs[] = ucfirst($field) . " must be a valid phone number (8+ digits with spaces, +, parentheses, and hyphens)";
+            break;
+        }
+      }
     }
   }
 

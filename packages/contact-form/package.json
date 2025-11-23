@@ -44,7 +44,8 @@
     "build": "tsup",
     "test": "vitest run",
     "dev": "tsup --watch",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
   },
   "author": "Facundo Botta",
   "license": "MIT",

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { FormData, ValidatorConstraints } from '../../src/domain/types';
+import {
+  FormData,
+  InputError,
+  ValidatorConstraints,
+} from '../../src/domain/types';
 import { FormValidator } from '../../src/services/FormValidator';
 
 const rules: ValidatorConstraints = {
@@ -61,7 +65,7 @@ describe('FormValidator', () => {
     expect(result.status).toBe(400);
     expect(result.errors).toHaveLength(1);
 
-    const [error] = result.errors!;
+    const [error] = result.errors! as InputError[];
     expect(error.field).toBe('replyTo');
     expect(error.message).toBe('replyTo is required');
   });
@@ -79,7 +83,7 @@ describe('FormValidator', () => {
     expect(result.status).toBe(400);
     expect(result.errors).toHaveLength(1);
 
-    const [error] = result.errors!;
+    const [error] = result.errors! as InputError[];
     expect(error.field).toBe('subject');
     expect(error.message).toBe('subject is required');
   });
@@ -97,7 +101,7 @@ describe('FormValidator', () => {
     expect(result.status).toBe(400);
     expect(result.errors).toHaveLength(1);
 
-    const [error] = result.errors!;
+    const [error] = result.errors! as InputError[];
     expect(error.field).toBe('message');
     expect(error.message).toContain('must be between');
   });

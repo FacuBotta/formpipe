@@ -1,6 +1,7 @@
 import { ErrorType, FormData, FormResponse } from 'src/domain/types';
 
 export class FormSubmitter {
+  // eslint-disable-next-line no-unused-vars
   constructor(private readonly url: string) {}
 
   async submit(data: FormData): Promise<FormResponse> {
