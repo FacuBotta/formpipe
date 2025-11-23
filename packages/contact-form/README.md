@@ -7,7 +7,7 @@ A robust and flexible solution for handling contact form submissions and sending
 - **Frontend and Backend Validation**: Integrates with `@formpipe/validators` for form input validation.
 - **CLI Configuration**: Easily set up and generate your PHP email backend.
 - **PHP Email Backend**: Securely sends emails using PHPMailer, supporting SMTP, rate limiting, and confirmation emails.
-- **Automatic docker setup for testing**: A minimal docker setup with PHP and Mailpit for testing your email sending
+- **One-command Docker setup**: Start local development environment with `npx formpipe serve` - includes PHP and Mailpit for testing email sending
 
 ## Installation
 
@@ -48,7 +48,24 @@ php
 └── PHPMailer // A ready to use local PHPMailer instance
 ```
 
-### 3. Methods
+### 3. Start Development Server
+
+To start the Docker containers for local development and testing:
+
+```bash
+npx formpipe serve
+```
+
+This command will:
+
+- Start the PHP and Mailpit containers in detached mode
+- Display the URLs where services are available:
+  - **Mailpit**: http://localhost:8025 (to view sent emails)
+  - **PHP Endpoint**: http://localhost:8080/php/contact-form.php
+
+**Note:** Make sure Docker is installed and running before using this command.
+
+### 4. Methods
 
 The `ContactForm` class provides the following methods:
 
@@ -341,6 +358,12 @@ interface FormData {
 }
 ```
 
+### `ValidationProps`
+
+```typescript
+type ValidationProps = Partial<FormData>;
+```
+
 ### `ValidationResponse`
 
 Response returned by the `validate()` method.
@@ -442,15 +465,31 @@ const form = new ContactForm({
 });
 ```
 
-### 2. Test with Docker Setup
+### 2. Start Development Server with Docker
 
-Use the provided `docker-compose.yml` to test email sending locally:
+Use the `serve` command to start Docker containers for local testing:
+
+```bash
+npx formpipe serve
+```
+
+This will start both PHP and Mailpit containers. You can then:
+
+- Access your PHP endpoint at: http://localhost:8080/php/contact-form.php
+- View sent emails in Mailpit at: http://localhost:8025
+
+**Alternative:** You can also manually start Docker containers:
 
 ```bash
 cd php
-docker-compose up -d
-# Your PHP endpoint will be available at http://localhost:8080/contact-form.php
-# You can access to the Mailpit mail box at http://localhost:8025
+docker compose up -d
+```
+
+**To stop containers:**
+
+```bash
+cd php
+docker compose down
 ```
 
 ## Related Packages
