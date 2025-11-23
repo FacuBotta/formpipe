@@ -166,18 +166,34 @@ foreach ($validatedFields as $key => $value) {
 try {
   $mail = new PHPMailer(true);
 
-  $mail->isSMTP();
-  $mail->Host = $config["smtp"]["host"];
-  $mail->Port = $config["smtp"]["port"];
-  $mail->SMTPAuth = shouldUseSMTPAuth($config["smtp"]);
-  if ($mail->SMTPAuth) {
-    $mail->Username = $config["smtp"]["user"];
-    $mail->Password = $config["smtp"]["pass"];
-  }
-  $mail->SMTPSecure = getSMTPSecure($config["smtp"]["port"]);
+  // Use environment variables if available, otherwise fall back to config
+  // This allows secure credential management in production
+  $smtpHost = getenv('FORMPIPE_SMTP_HOST') ?: $config["smtp"]["host"];
+  $smtpPort = (int)(getenv('FORMPIPE_SMTP_PORT') ?: $config["smtp"]["port"]);
+  $smtpUser = getenv('FORMPIPE_SMTP_USER') ?: $config["smtp"]["user"];
+  $smtpPass = getenv('FORMPIPE_SMTP_PASS') ?: $config["smtp"]["pass"];
+  $fromEmail = getenv('FORMPIPE_FROM') ?: $config["from"];
+  $toEmail = getenv('FORMPIPE_TO') ?: $config["to"];
 
-  $mail->setFrom($config["from"], "Contact Form");
-  $mail->addAddress($config["to"]);
+  $smtpConfig = [
+    "host" => $smtpHost,
+    "port" => $smtpPort,
+    "user" => $smtpUser,
+    "pass" => $smtpPass,
+  ];
+
+  $mail->isSMTP();
+  $mail->Host = $smtpHost;
+  $mail->Port = $smtpPort;
+  $mail->SMTPAuth = shouldUseSMTPAuth($smtpConfig);
+  if ($mail->SMTPAuth) {
+    $mail->Username = $smtpUser;
+    $mail->Password = $smtpPass;
+  }
+  $mail->SMTPSecure = getSMTPSecure($smtpPort);
+
+  $mail->setFrom($fromEmail, "Contact Form");
+  $mail->addAddress($toEmail);
   $replyTo = $validatedFields["replyTo"];
   $mail->addReplyTo($replyTo);
 

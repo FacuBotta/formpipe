@@ -28,7 +28,20 @@ export default async function generate() {
       endPointPath: config.endPointPath,
     };
     generateConfigToExport(rulesAndPath, projectPhpFolder);
-    console.log(`✅ Generated confit.ts at:\n   ${projectPhpMainFile}\n`);
+    console.log(
+      `✅ Generated formConfig.ts at:\n   ${path.join(
+        projectPhpFolder,
+        'form-config.ts'
+      )}\n`
+    );
+
+    // Create .gitignore to prevent committing sensitive config
+    createGitignore(projectPhpFolder);
+
+    console.log(
+      '💡 Tip: In production, use environment variables for SMTP credentials.'
+    );
+    console.log('   See php/ENV.md for details.\n');
   } catch (error) {
     console.error('❌ Error during generation:', error);
     process.exit(1);
@@ -45,6 +58,24 @@ function generateConfigToExport(config: FormConfig, projectPhpFolder: string) {
   export const formConfig: FormConfig = ${JSON.stringify(config, null, 2)};`;
   const configPath = path.join(projectPhpFolder, 'form-config.ts');
   fs.writeFileSync(configPath, configContent);
+}
+
+function createGitignore(projectPhpFolder: string) {
+  const gitignorePath = path.join(projectPhpFolder, '.gitignore');
+  const gitignoreContent = `# Ignore contact-form.php to prevent committing SMTP credentials
+# In production, use environment variables instead (see ENV.md)
+contact-form.php
+
+# Ignore any local environment files
+.env
+.env.local
+.htaccess
+`;
+
+  // Only create if it doesn't exist to avoid overwriting user's custom .gitignore
+  if (!fs.existsSync(gitignorePath)) {
+    fs.writeFileSync(gitignorePath, gitignoreContent);
+  }
 }
 
 /**
