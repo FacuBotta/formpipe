@@ -4,5 +4,6 @@ export {
   FormResponse,
   PhoneValidationMode,
   SubmitProps,
+  ValidationProps,
   ValidationResponse,
 } from './domain/types';

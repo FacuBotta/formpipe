@@ -3,6 +3,7 @@ import {
   FormData,
   FormResponse,
   SubmitProps,
+  ValidationProps,
   ValidatorConstraints,
 } from 'src/domain/types';
 import { FormSubmitter } from '../services/FormSubmitter';
@@ -43,7 +44,7 @@ export class ContactForm {
    *   message: 'Test message'
    * });
    */
-  validate(data: FormData): FormResponse {
+  validate(data: ValidationProps): FormResponse {
     if (!this.validator) {
       return {
         success: false,
