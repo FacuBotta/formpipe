@@ -1,5 +1,6 @@
 export interface FormData {
   replyTo: string;
+  name?: string;
   subject: string;
   message: string;
   phoneNumber?: string;
@@ -26,6 +27,8 @@ export interface InputError extends FormInput {
   message: string;
 }
 export type ErrorType = 'validation' | 'network' | 'server' | 'system';
+
+export type ValidationProps = Partial<FormData>;
 
 export type ValidationConstraints = Partial<InputRules>;
 
@@ -55,7 +58,7 @@ export interface ValidationResponse {
   message: string;
   errors: InputError[] | null;
   data?: {
-    fields?: FormData;
+    fields?: Partial<FormData>;
     rules?: ValidatorConstraints;
   };
 }
@@ -64,7 +67,7 @@ export interface FormResponse {
   status: number;
   message: string;
   data?: {
-    fields?: FormData | null;
+    fields?: Partial<FormData> | null;
     url?: string;
     rules?: ValidatorConstraints;
   };
