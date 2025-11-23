@@ -43,6 +43,8 @@ export function generatePhpFromConfig(
   const templatePath = findTemplatePath();
   const template = readFileSync(templatePath, 'utf8');
 
+  // Generate config with fallback values (for development/testing)
+  // In production, environment variables will override these values
   const phpConfig = `$config = ${jsonToPhpArray(config)};`;
   const finalContent = template.replace('$config = null;', phpConfig);
 
