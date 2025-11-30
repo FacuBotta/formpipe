@@ -32,6 +32,17 @@ Set the following environment variables in your production server:
 | `FORMPIPE_FROM`      | Sender email address    | `noreply@yoursite.com` |
 | `FORMPIPE_TO`        | Recipient email address | `contact@yoursite.com` |
 
+### Rate Limiting (Redis)
+
+For production deployments, rate limiting uses Redis (if available). The following variables configure the Redis connection:
+
+| Variable     | Description       | Default | Example     |
+| ------------ | ----------------- | ------- | ----------- |
+| `REDIS_HOST` | Redis server host | `redis` | `localhost` |
+| `REDIS_PORT` | Redis server port | `6379`  | `6379`      |
+
+If Redis is not available, rate limiting falls back to PHP sessions (less reliable in distributed setups).
+
 ## Setting Environment Variables
 
 ### Apache (.htaccess)
@@ -115,6 +126,51 @@ For production:
 3. **Use app-specific passwords** - For Gmail and similar services, use app passwords instead of your main password
 4. **Restrict file permissions** - Ensure `.htaccess` and PHP files have appropriate permissions
 5. **Use HTTPS** - Always use HTTPS in production to encrypt data in transit
+6. **Use Redis for rate limiting** - In production, set up Redis for robust rate limiting across multiple servers
+
+## Production Setup with Redis
+
+### Docker Compose Example
+
+If you're using Docker in production, the `docker-compose.yml` includes Redis:
+
+```yaml
+services:
+  php:
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+```
+
+### Traditional Server Setup
+
+If you're not using Docker, install Redis on your server:
+
+**Ubuntu/Debian:**
+
+```bash
+sudo apt-get install redis-server
+sudo systemctl start redis-server
+```
+
+**CentOS:**
+
+```bash
+sudo yum install redis
+sudo systemctl start redis
+```
+
+Then set environment variables in `.htaccess`:
+
+```apache
+SetEnv REDIS_HOST "localhost"
+SetEnv REDIS_PORT "6379"
+```
 
 ## Testing
 
@@ -124,6 +180,7 @@ To test that environment variables are working:
 2. Submit a test form
 3. Check that emails are sent using the production SMTP settings
 4. Verify the email is received at the `FORMPIPE_TO` address
+5. Test rate limiting by submitting multiple forms quickly (should get 429 error after limit)
 
 ## Troubleshooting
 
@@ -139,3 +196,57 @@ To test that environment variables are working:
 - Ensure environment variable names are exactly as listed (case-sensitive)
 - Verify the variables are set before PHP executes
 - Check that `getenv()` is not disabled in your PHP configuration
+
+## Redis Configuration in Production
+
+### Option 1: Managed Redis Service
+
+Use a managed Redis service (AWS ElastiCache, Google Cloud Memorystore, etc.):
+
+1. Create a Redis instance in your cloud provider
+2. Get the hostname and port
+3. Set environment variables:
+   ```apache
+   SetEnv REDIS_HOST "your-redis-instance.example.com"
+   SetEnv REDIS_PORT "6379"
+   ```
+
+### Option 2: Self-Hosted Redis
+
+Install and run Redis on your server:
+
+**Ubuntu/Debian:**
+
+```bash
+sudo apt-get install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+```
+
+Then set environment variables:
+
+```apache
+SetEnv REDIS_HOST "localhost"
+SetEnv REDIS_PORT "6379"
+```
+
+### Option 3: Docker Production
+
+If using Docker in production:
+
+```yaml
+services:
+  php:
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+```
+
+### Disabling Rate Limiting
+
+If Redis is not available, rate limiting automatically falls back to PHP sessions. For no rate limiting at all, contact your hosting provider or set `rateLimit: 0` in your config (rate limiting will be disabled).

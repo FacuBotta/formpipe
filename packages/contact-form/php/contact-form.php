@@ -35,18 +35,59 @@ if ($config['useLocalPhpMailer']) {
 ----------------------------------------------------
 ---------- RATE LIMITING HELPER FUNCTIONS ----------
 ----------------------------------------------------
-*/
-function getRateLimitFile()
-{
-  $tmpDir = sys_get_temp_dir();
-  $file = $tmpDir . '/formpipe_rate_limit.json';
 
-  // Verify directory is writable
-  if (!is_writable($tmpDir)) {
-    throw new Exception("Rate limit storage directory is not writable");
+Rate limiting strategy:
+1. PRIMARY: Redis (distributed, production-ready)
+   - Required for: multi-server setups, horizontal scaling
+   - Configure via: REDIS_HOST, REDIS_PORT env vars
+   - Recommended for production
+
+2. FALLBACK: PHP Sessions (if Redis unavailable)
+   - Works locally and in development
+   - Suitable for single-server deployments
+
+Rate limits are per IP address, using SHA256 hash of IP.
+Window: 60 seconds (configurable via rateLimit in config)
+*/
+
+// Get Redis connection (returns null if unavailable)
+function getRedisConnection()
+{
+  static $redis = null;
+
+  if ($redis === null) {
+    try {
+      // Check if Redis extension is available
+      if (!extension_loaded('redis')) {
+        $redis = false;
+        return null;
+      }
+
+      $redisHost = getenv('REDIS_HOST') ?: 'redis';
+      $redisPort = (int)(getenv('REDIS_PORT') ?: 6379);
+
+      // @phpstan-ignore-next-line - Redis extension not available in IDE but will be in runtime
+      $redis = new \Redis();
+      @$redis->connect($redisHost, $redisPort, 2); // 2 second timeout
+
+      if (!$redis->ping()) {
+        $redis = false;
+      }
+    } catch (Exception $e) {
+      error_log("Redis connection error: " . $e->getMessage());
+      $redis = false;
+    }
   }
 
-  return $file;
+  return $redis !== false ? $redis : null;
+}
+
+// Initialize sessions safely (only if not already started)
+function initializeSessionSafely()
+{
+  if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+  }
 }
 
 function getClientIP()
@@ -55,14 +96,13 @@ function getClientIP()
   if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
     $ip = $_SERVER['HTTP_CLIENT_IP'];
   } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    // Get first IP from forwarded chain
     $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
     $ip = trim($ips[0]);
   } else {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
   }
 
-  // Validate IP format (basic check)
+  // Validate IP format
   if (filter_var($ip, FILTER_VALIDATE_IP)) {
     return $ip;
   }
@@ -70,106 +110,21 @@ function getClientIP()
   return '0.0.0.0';
 }
 
-function getRateLimitData()
-{
-  try {
-    $file = getRateLimitFile();
-    if (file_exists($file) && filesize($file) > 0) {
-      $content = file_get_contents($file);
-      $data = json_decode($content, true);
-      return is_array($data) ? $data : [];
-    }
-  } catch (Exception $e) {
-    error_log("Rate limit read error: " . $e->getMessage());
-  }
-  return [];
-}
-
-function saveRateLimitData($data)
-{
-  try {
-    $file = getRateLimitFile();
-    $now = time();
-    $cutoff = $now - 180; // clean entries older than 3 minutes
-
-    // Remove stale entries for performance
-    foreach ($data as $ip => $info) {
-      if (isset($info['first_request']) && $info['first_request'] < $cutoff) {
-        unset($data[$ip]);
-      }
-    }
-
-    // Write atomically with lock
-    $tempFile = $file . '.tmp';
-    if (file_put_contents($tempFile, json_encode($data), LOCK_EX) !== false) {
-      rename($tempFile, $file);
-    }
-  } catch (Exception $e) {
-    error_log("Rate limit write error: " . $e->getMessage());
-  }
-}
-
 function checkRateLimit($clientIP, $rateLimitPerMinute)
 {
   $now = time();
   $windowSize = 60;
+  $key = 'formpipe_rl_' . hash('sha256', $clientIP, false);
 
   try {
-    $data = getRateLimitData();
-
-    // Sanitize IP key to prevent injection
-    $key = hash('sha256', $clientIP, false); // Use hash instead of raw IP
-
-    if (!isset($data[$key])) {
-      // First request from this IP
-      $data[$key] = [
-        'first_request' => $now,
-        'count' => 1
-      ];
-      saveRateLimitData($data);
-      return [
-        'allowed' => true,
-        'remaining' => $rateLimitPerMinute - 1,
-        'resetIn' => $windowSize
-      ];
+    // Try Redis first (if available)
+    $redis = getRedisConnection();
+    if ($redis !== null) {
+      return checkRateLimitRedis($redis, $key, $rateLimitPerMinute, $now, $windowSize);
     }
 
-    $lastData = $data[$key];
-    $timeSinceFirstRequest = $now - $lastData['first_request'];
-
-    if ($timeSinceFirstRequest > $windowSize) {
-      // Window expired, reset counter
-      $data[$key] = [
-        'first_request' => $now,
-        'count' => 1
-      ];
-      saveRateLimitData($data);
-      return [
-        'allowed' => true,
-        'remaining' => $rateLimitPerMinute - 1,
-        'resetIn' => $windowSize
-      ];
-    }
-
-    // We are within the window
-    if ($lastData['count'] >= $rateLimitPerMinute) {
-      // LLimit exceeded
-      $resetIn = $windowSize - $timeSinceFirstRequest;
-      return [
-        'allowed' => false,
-        'remaining' => 0,
-        'resetIn' => max(1, $resetIn)
-      ];
-    }
-
-    $data[$key]['count']++;
-    saveRateLimitData($data);
-    $resetIn = $windowSize - $timeSinceFirstRequest;
-    return [
-      'allowed' => true,
-      'remaining' => $rateLimitPerMinute - $data[$key]['count'],
-      'resetIn' => max(1, $resetIn)
-    ];
+    // Fallback to sessions
+    return checkRateLimitSession($key, $rateLimitPerMinute, $now, $windowSize);
   } catch (Exception $e) {
     error_log("Rate limit check error: " . $e->getMessage());
     // Fail open: allow request if rate limit fails (prefer availability)
@@ -179,6 +134,124 @@ function checkRateLimit($clientIP, $rateLimitPerMinute)
       'resetIn' => $windowSize
     ];
   }
+}
+
+function checkRateLimitRedis($redis, $key, $rateLimitPerMinute, $now, $windowSize)
+{
+  $data = $redis->hGetAll($key);
+
+  if (empty($data)) {
+    // First request from this IP
+    $redis->hSet($key, 'first_request', $now);
+    $redis->hSet($key, 'count', 1);
+    $redis->expire($key, $windowSize + 60); // Expire after window + buffer
+
+    return [
+      'allowed' => true,
+      'remaining' => $rateLimitPerMinute - 1,
+      'resetIn' => $windowSize
+    ];
+  }
+
+  $firstRequest = (int)$data['first_request'];
+  $count = (int)$data['count'];
+  $timeSinceFirstRequest = $now - $firstRequest;
+
+  if ($timeSinceFirstRequest > $windowSize) {
+    // Window expired, reset counter
+    $redis->del($key);
+    $redis->hSet($key, 'first_request', $now);
+    $redis->hSet($key, 'count', 1);
+    $redis->expire($key, $windowSize + 60);
+
+    return [
+      'allowed' => true,
+      'remaining' => $rateLimitPerMinute - 1,
+      'resetIn' => $windowSize
+    ];
+  }
+
+  // Within the window
+  if ($count >= $rateLimitPerMinute) {
+    $resetIn = $windowSize - $timeSinceFirstRequest;
+    return [
+      'allowed' => false,
+      'remaining' => 0,
+      'resetIn' => max(1, $resetIn)
+    ];
+  }
+
+  // Increment counter
+  $redis->hIncr($key, 'count', 1);
+  $resetIn = $windowSize - $timeSinceFirstRequest;
+
+  return [
+    'allowed' => true,
+    'remaining' => $rateLimitPerMinute - ($count + 1),
+    'resetIn' => max(1, $resetIn)
+  ];
+}
+
+function checkRateLimitSession($key, $rateLimitPerMinute, $now, $windowSize)
+{
+  initializeSessionSafely();
+
+  if (!isset($_SESSION['formpipe_rate_limits'])) {
+    $_SESSION['formpipe_rate_limits'] = [];
+  }
+
+  $data = &$_SESSION['formpipe_rate_limits'];
+
+  if (!isset($data[$key])) {
+    // First request from this IP
+    $data[$key] = [
+      'first_request' => $now,
+      'count' => 1
+    ];
+
+    return [
+      'allowed' => true,
+      'remaining' => $rateLimitPerMinute - 1,
+      'resetIn' => $windowSize
+    ];
+  }
+
+  $lastData = $data[$key];
+  $timeSinceFirstRequest = $now - $lastData['first_request'];
+
+  if ($timeSinceFirstRequest > $windowSize) {
+    // Window expired, reset counter
+    $data[$key] = [
+      'first_request' => $now,
+      'count' => 1
+    ];
+
+    return [
+      'allowed' => true,
+      'remaining' => $rateLimitPerMinute - 1,
+      'resetIn' => $windowSize
+    ];
+  }
+
+  // Within the window
+  if ($lastData['count'] >= $rateLimitPerMinute) {
+    $resetIn = $windowSize - $timeSinceFirstRequest;
+    return [
+      'allowed' => false,
+      'remaining' => 0,
+      'resetIn' => max(1, $resetIn)
+    ];
+  }
+
+  // Increment counter
+  $data[$key]['count']++;
+  $resetIn = $windowSize - $timeSinceFirstRequest;
+
+  return [
+    'allowed' => true,
+    'remaining' => $rateLimitPerMinute - $data[$key]['count'],
+    'resetIn' => max(1, $resetIn)
+  ];
 }
 
 /* 
@@ -379,7 +452,7 @@ try {
 
   $mail->isHTML(true);
   $mail->Subject = $subject;
-  $mail->Body = "<h2>New Contact Form Submission</h2>\n" . $emailContent;
+  $mail->Body = $emailContent;
   $mail->AltBody = strip_tags($emailContent);
 
   $mail->send();
