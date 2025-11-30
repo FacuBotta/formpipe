@@ -95,6 +95,6 @@ export interface FormMainConfig extends FormConfig {
   };
   from: string;
   to: string;
-  sendConfirmation: boolean;
+  useLocalPhpMailer: boolean;
   rateLimit: number;
 }

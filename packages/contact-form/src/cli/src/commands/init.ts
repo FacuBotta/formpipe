@@ -23,7 +23,7 @@ const config: FormMainConfig = {
     phoneNumber: { phoneValidationMode: 'e164', required: false },
     message: { minLength: 10, maxLength: 500, required: true },
   },
-  sendConfirmation: false,
+  useLocalPhpMailer: true,
   rateLimit: 10,
 };
 

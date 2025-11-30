@@ -1,9 +1,5 @@
 <?php
 
-require "PHPMailer/src/Exception.php";
-require "PHPMailer/src/PHPMailer.php";
-require "PHPMailer/src/SMTP.php";
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -19,6 +15,17 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
 }
 
 $config = null;
+
+// Load PHPMailer based on config
+if ($config['useLocalPhpMailer']) {
+  // Use local PHPMailer from ./PHPMailer/ folder
+  require __DIR__ . "/PHPMailer/src/Exception.php";
+  require __DIR__ . "/PHPMailer/src/PHPMailer.php";
+  require __DIR__ . "/PHPMailer/src/SMTP.php";
+} else {
+  // Use PHPMailer from composer
+  require __DIR__ . "/vendor/autoload.php";
+}
 
 // Helper function to determine encryption type based on port
 function getSMTPSecure($port)
