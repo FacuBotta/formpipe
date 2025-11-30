@@ -50,7 +50,7 @@ You can personalize the input's rules, smtp options, your endpoint path and more
 
 ```
 
-| See [Configuration](#configuration-formpipeconfigjson) for more details
+> See [Configuration](#configuration-formpipeconfigjson) for more details
 
 ### 2. Generate PHP Backend
 
@@ -137,7 +137,7 @@ if (validationResult.success) {
 }
 ```
 
-See [`@formpipe/validators`](https://github.com/FacuBotta/formpipe/tree/main/packages/validators) for details about validation.
+> See [`@formpipe/validators`](https://github.com/FacuBotta/formpipe/tree/main/packages/validators) for details about validation.
 
 ---
 
