@@ -30,24 +30,22 @@ npx formpipe init
 The `formpipe.config.json` is generated with default values ready to test email's send in a local environment.
 You can personalize the input's rules, smtp options, your endpoint path and more.
 
-```json
+```javascript
+rules: ValidatorConstraints; // Rules for your inputs
+endPointPath: string; // The endpoint to fetch - Default is http://localhost:8080/php/contact-form.php
 
-  rules: ValidatorConstraints; // Rules for your inputs
-  endPointPath: string; // The endpoint to fetch - Default is http://localhost:8080/php/contact-form.php
-
-  // smtp config (Use environment variables to prevent security leeks)
-  // See more in php/ENV.md to learn how to config it
-  smtp: {
-    host: string; // Default is "mailpit" for local testing
-    port: number; // Default is 1025 for local testing
-    user: string;
-    pass: string;
-  };
-  from: string;
-  to: string;
-  useLocalPhpMailer: boolean; // Switch between local or composer phpmailer
-  rateLimit: number; // The max of request allowed by minute
-
+// smtp config (Use environment variables to prevent security leeks)
+// See more in php/ENV.md to learn how to config it
+smtp: {
+  host: string; // Default is "mailpit" for local testing
+  port: number; // Default is 1025 for local testing
+  user: string;
+  pass: string;
+}
+from: string;
+to: string;
+useLocalPhpMailer: boolean; // Switch between local or composer phpmailer
+rateLimit: number; // The max of request allowed by minute
 ```
 
 > See [Configuration](#configuration-formpipeconfigjson) for more details
