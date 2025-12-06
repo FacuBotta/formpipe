@@ -25,6 +25,7 @@ const config: FormMainConfig = {
   },
   useLocalPhpMailer: true,
   rateLimit: 1,
+  debug: false,
 };
 
 export default function init() {

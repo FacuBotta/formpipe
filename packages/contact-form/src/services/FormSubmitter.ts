@@ -85,6 +85,7 @@ export class FormSubmitter {
 
       // --- Success case ---
       if (payload.success) {
+        console.log('Payload received:', { payload, response });
         return {
           success: true,
           status: 200,
