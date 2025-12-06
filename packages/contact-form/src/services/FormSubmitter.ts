@@ -40,6 +40,7 @@ export class FormSubmitter {
           {
             payload,
             response,
+            debugInfo: payload.debugInfo || null,
           }
         );
       }
@@ -55,13 +56,15 @@ export class FormSubmitter {
                 message: 'Validation failed',
                 data: { fields: data, url: this.url },
                 errors: payload.errors,
+                debugInfo: payload.debugInfo || null,
               };
             }
             return this.errorResponse(
               400,
               payload.error || 'Bad Request',
               'server',
-              payload
+              payload,
+              payload.debugInfo || null
             );
 
           case 429:
@@ -69,7 +72,8 @@ export class FormSubmitter {
               429,
               payload.error || 'Too many requests',
               'server',
-              payload
+              payload,
+              payload.debugInfo || null
             );
 
           case 500:
@@ -78,20 +82,21 @@ export class FormSubmitter {
               500,
               payload.error || 'Server error',
               'server',
-              payload
+              payload,
+              payload.debugInfo || null
             );
         }
       }
 
       // --- Success case ---
       if (payload.success) {
-        console.log('Payload received:', { payload, response });
         return {
           success: true,
           status: 200,
           message: payload.message || 'Form submitted successfully',
           data: { fields: data, url: this.url },
           errors: null,
+          debugInfo: payload.debugInfo || null,
         };
       }
 
@@ -100,7 +105,8 @@ export class FormSubmitter {
         500,
         'Unexpected response structure',
         'server',
-        payload
+        payload,
+        payload.debugInfo || null
       );
     } catch (error: unknown) {
       return this.errorResponse(0, 'Network error occurred', 'network', {
@@ -113,7 +119,8 @@ export class FormSubmitter {
     status: number,
     message: string,
     type: ErrorType,
-    data?: unknown
+    data?: unknown,
+    debugInfo?: unknown
   ): FormResponse {
     return {
       success: false,
@@ -127,6 +134,7 @@ export class FormSubmitter {
           data,
         },
       ],
+      debugInfo: debugInfo || null,
     };
   }
 }

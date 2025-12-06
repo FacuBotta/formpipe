@@ -208,7 +208,8 @@ try {
   http_response_code(500);
   $response = json_encode([
     "success" => false,
-    "error" => "Mailer Error: " . $e->getMessage()
+    "error" => "Mailer Error: " . $e->getMessage(),
+    "debug" => $config['debug'] ? $debugInfo : null
   ]);
   echo $response;
 

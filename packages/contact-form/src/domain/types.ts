@@ -79,6 +79,7 @@ export interface FormResponse {
         data?: unknown;
       }>
     | null;
+  debugInfo?: unknown;
 }
 
 export interface FormConfig {
