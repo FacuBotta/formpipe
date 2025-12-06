@@ -1,4 +1,5 @@
 <?php
+ob_start();
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -22,6 +23,11 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
   exit;
 }
 
+// Initialize session for rate limiting fallback
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
 $config = null;
 
 /*
@@ -42,6 +48,17 @@ function addDebugLog($message, $data = null)
 
   $debugLogs[] = $log;
 
+  // Log to file
+  $logPath = __DIR__ . '/formpipe.log';
+  $logMessage = "[" . date('Y-m-d H:i:s') . "] " . $message;
+  if ($data !== null) {
+    $logMessage .= " | " . json_encode($data);
+  }
+  $logMessage .= "\n";
+
+  file_put_contents($logPath, $logMessage, FILE_APPEND);
+
+  // Also log to error_log
   error_log("[FORMPIPE DEBUG] " . $message . ($data ? " | " . json_encode($data) : ""));
 }
 
@@ -68,6 +85,7 @@ if ($config['useLocalPhpMailer'] ?? false) {
 $input = json_decode(file_get_contents("php://input"), true);
 if (!$input) {
   http_response_code(400);
+  ob_clean();
   exit(json_encode(["success" => false, "error" => "Invalid JSON payload"]));
 }
 
@@ -110,25 +128,25 @@ try {
 $rateLimitHandler = new RateLimitHandler($redis);
 $rate = $rateLimitHandler->checkLimit(HelperUtilities::getClientIP(), $config['rateLimit']);
 
+addDebugLog("Rate limit check", ['allowed' => $rate['allowed'], 'remaining' => $rate['remaining'], 'resetIn' => $rate['resetIn']]);
+
 if (!$rate['allowed']) {
   addDebugLog("Rate limit exceeded");
 
-  if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
+  // Close Redis connection
+  $rateLimitHandler->closeConnection();
+
+  // Clear ALL buffers safely
+  while (ob_get_level() > 0) {
+    ob_end_clean();
   }
 
   http_response_code(429);
-  $response = json_encode([
+  echo json_encode([
     "success" => false,
     "error" => "Rate limit exceeded",
     "retryAfter" => $rate['resetIn']
   ]);
-  echo $response;
-
-  $rateLimitHandler->closeConnection();
-
-  flush();
-  ob_flush();
   exit;
 }
 
@@ -141,12 +159,17 @@ if (isset($input["fields"])) {
   }
 }
 
+addDebugLog("Fields extracted", ['count' => count($provided)]);
+
 // Validate fields
 $fieldValidator = new FieldValidator($config['rules']);
 $errors = $fieldValidator->validateAll($provided);
 
+addDebugLog("Fields validated", ['errors' => count($errors)]);
+
 if (!empty($errors)) {
   http_response_code(400);
+  ob_clean();
   exit(json_encode(["success" => false, "errors" => $errors]));
 }
 
@@ -155,6 +178,8 @@ $validated = [];
 foreach ($config['rules'] as $field => $rules) {
   $validated[$field] = HelperUtilities::sanitizeField($provided[$field] ?? "");
 }
+
+addDebugLog("Fields sanitized", ['fields' => array_keys($validated)]);
 
 /*
 ----------------------------------------------------
@@ -181,7 +206,13 @@ try {
   }
 
   // Enable TLS encryption if port is 587 or 465
-  $mail->SMTPSecure = $smtpPort == 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+  if ($smtpPort == 465) {
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+  } elseif ($smtpPort == 587) {
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+  } else {
+    $mail->SMTPSecure = false;
+  }
 
   $mail->setFrom($config["from"], "Contact Form");
   $mail->addAddress($config["to"]);
@@ -192,28 +223,30 @@ try {
   $mail->Body = HelperUtilities::buildEmailContent($validated);
   $mail->AltBody = strip_tags($mail->Body);
 
+  addDebugLog("Sending email", ['to' => $config["to"], 'subject' => $validated["subject"]]);
+
   $mail->send();
+
+  addDebugLog("Email sent successfully");
 
   $rateLimitHandler->closeConnection();
 
+  http_response_code(200);
+  ob_clean();
   $response = json_encode(["success" => true, "message" => "Email sent successfully"]);
   echo $response;
-
-  flush();
-  ob_flush();
   exit;
 } catch (Exception $e) {
+  addDebugLog("Email sending failed", ['error' => $e->getMessage()]);
+
   $rateLimitHandler->closeConnection();
 
   http_response_code(500);
+  ob_clean();
   $response = json_encode([
     "success" => false,
-    "error" => "Mailer Error: " . $e->getMessage(),
-    "debug" => $config['debug'] ? $debugInfo : null
+    "error" => "Mailer Error: " . $e->getMessage()
   ]);
   echo $response;
-
-  flush();
-  ob_flush();
   exit;
 }

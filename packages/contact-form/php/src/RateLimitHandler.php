@@ -71,38 +71,36 @@ class RateLimitHandler
   private function checkLimitWithRedis(string $clientIP, int $limit): array
   {
     $key = self::RATE_LIMIT_PREFIX . hash('sha256', $clientIP);
-    $now = time();
 
     try {
-      $data = $this->redis->hGetAll($key);
+      // Increment counter
+      $count = $this->redis->incr($key);
 
-      if (empty($data)) {
-        $this->redis->hSet($key, 'first_request', $now);
-        $this->redis->hSet($key, 'count', 1);
-        $this->redis->expire($key, self::WINDOW_SECONDS + 60);
-        return ['allowed' => true, 'remaining' => $limit - 1, 'resetIn' => self::WINDOW_SECONDS];
+      // If first request, set expiration
+      if ($count === 1) {
+        $this->redis->expire($key, self::WINDOW_SECONDS);
       }
 
-      $first = (int)$data['first_request'];
-      $count = (int)$data['count'];
-      $elapsed = $now - $first;
-
-      if ($elapsed > self::WINDOW_SECONDS) {
-        $this->redis->del($key);
-        $this->redis->hSet($key, 'first_request', $now);
-        $this->redis->hSet($key, 'count', 1);
-        $this->redis->expire($key, self::WINDOW_SECONDS + 60);
-        return ['allowed' => true, 'remaining' => $limit - 1, 'resetIn' => self::WINDOW_SECONDS];
+      // If exceeded
+      if ($count > $limit) {
+        $ttl = $this->redis->ttl($key);
+        return [
+          'allowed' => false,
+          'remaining' => 0,
+          'resetIn' => $ttl > 0 ? $ttl : self::WINDOW_SECONDS
+        ];
       }
 
-      if ($count >= $limit) {
-        return ['allowed' => false, 'remaining' => 0, 'resetIn' => self::WINDOW_SECONDS - $elapsed];
-      }
-
-      $this->redis->hIncr($key, 'count', 1);
-      return ['allowed' => true, 'remaining' => $limit - $count - 1, 'resetIn' => self::WINDOW_SECONDS - $elapsed];
+      // Allowed
+      $ttl = $this->redis->ttl($key);
+      return [
+        'allowed' => true,
+        'remaining' => $limit - $count,
+        'resetIn' => $ttl > 0 ? $ttl : self::WINDOW_SECONDS
+      ];
     } catch (\Exception $e) {
-      return ['allowed' => true, 'remaining' => $limit, 'resetIn' => self::WINDOW_SECONDS];
+      // On error, fallback to session logic
+      return $this->checkLimitWithSession($clientIP, $limit);
     }
   }
 

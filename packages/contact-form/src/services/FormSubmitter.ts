@@ -32,17 +32,16 @@ export class FormSubmitter {
       let payload: any;
       try {
         payload = await response.json();
-      } catch {
-        return this.errorResponse(
-          response.status,
-          'Invalid JSON response from server',
-          'server',
-          {
-            payload,
-            response,
-            debugInfo: payload.debugInfo || null,
-          }
-        );
+      } catch (parseError) {
+        const errorMessage = `Invalid JSON response from server: ${
+          parseError instanceof Error ? parseError.message : 'Unknown error'
+        }`;
+        return this.errorResponse(response.status, errorMessage, 'server', {
+          parseError:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+        });
       }
 
       if (!response.ok) {
@@ -56,15 +55,13 @@ export class FormSubmitter {
                 message: 'Validation failed',
                 data: { fields: data, url: this.url },
                 errors: payload.errors,
-                debugInfo: payload.debugInfo || null,
               };
             }
             return this.errorResponse(
               400,
               payload.error || 'Bad Request',
               'server',
-              payload,
-              payload.debugInfo || null
+              payload
             );
 
           case 429:
@@ -72,8 +69,7 @@ export class FormSubmitter {
               429,
               payload.error || 'Too many requests',
               'server',
-              payload,
-              payload.debugInfo || null
+              payload
             );
 
           case 500:
@@ -82,8 +78,7 @@ export class FormSubmitter {
               500,
               payload.error || 'Server error',
               'server',
-              payload,
-              payload.debugInfo || null
+              payload
             );
         }
       }
@@ -96,7 +91,6 @@ export class FormSubmitter {
           message: payload.message || 'Form submitted successfully',
           data: { fields: data, url: this.url },
           errors: null,
-          debugInfo: payload.debugInfo || null,
         };
       }
 
@@ -105,8 +99,7 @@ export class FormSubmitter {
         500,
         'Unexpected response structure',
         'server',
-        payload,
-        payload.debugInfo || null
+        payload
       );
     } catch (error: unknown) {
       return this.errorResponse(0, 'Network error occurred', 'network', {
@@ -119,8 +112,7 @@ export class FormSubmitter {
     status: number,
     message: string,
     type: ErrorType,
-    data?: unknown,
-    debugInfo?: unknown
+    data?: unknown
   ): FormResponse {
     return {
       success: false,
@@ -134,7 +126,6 @@ export class FormSubmitter {
           data,
         },
       ],
-      debugInfo: debugInfo || null,
     };
   }
 }
