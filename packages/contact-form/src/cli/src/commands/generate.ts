@@ -63,11 +63,7 @@ function generateConfigToExport(config: FormConfig, projectPhpFolder: string) {
 
 function createGitignore(projectPhpFolder: string) {
   const gitignorePath = path.join(projectPhpFolder, '.gitignore');
-  const gitignoreContent = `# Ignore contact-form.php to prevent committing SMTP credentials
-# In production, use environment variables instead (see ENV.md)
-contact-form.php
-
-# Ignore any local environment files
+  const gitignoreContent = `# Ignore any local environment files
 .env
 .env.local
 .htaccess

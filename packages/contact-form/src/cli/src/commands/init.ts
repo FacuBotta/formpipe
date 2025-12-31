@@ -24,7 +24,7 @@ const config: FormMainConfig = {
     message: { minLength: 10, maxLength: 500, required: true },
   },
   useLocalPhpMailer: true,
-  rateLimit: 1,
+  rateLimit: 2,
   debug: false,
 };
 
