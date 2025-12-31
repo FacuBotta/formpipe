@@ -4,152 +4,74 @@ namespace Formpipe\ContactForm;
 
 class RateLimitHandler
 {
-  /** @var \Redis|null */
-  private $redis;
-  private const RATE_LIMIT_PREFIX = 'formpipe_rl_';
-  private const WINDOW_SECONDS = 60;
+  private string $storageDir;
+  private int $limit;
+  private int $window;
 
-  /**
-   * @param \Redis|null $redis Redis connection instance (optional)
-   */
-  public function __construct($redis = null)
-  {
-    $this->redis = $redis;
-    if ($redis !== null) {
-      $this->ensureRedisConnection();
+  public function __construct(
+    string $storageDir,
+    int $limit,
+    int $windowSeconds = 60
+  ) {
+    $this->storageDir = rtrim($storageDir, '/');
+    $this->limit = $limit;
+    $this->window = $windowSeconds;
+
+    if (!is_dir($this->storageDir)) {
+      mkdir($this->storageDir, 0755, true);
     }
   }
 
-  /**
-   * Checks if client has exceeded rate limit
-   *
-   * @param string $clientIP Client IP address
-   * @param int $limit Maximum requests allowed
-   * @return array ['allowed' => bool, 'remaining' => int, 'resetIn' => int]
-   */
-  public function checkLimit(string $clientIP, int $limit): array
+  public function check(string $key): array
   {
-    try {
-      if ($this->isRedisAvailable()) {
-        return $this->checkLimitWithRedis($clientIP, $limit);
-      }
-      return $this->checkLimitWithSession($clientIP, $limit);
-    } catch (\Exception $e) {
-      // On error, allow the request
-      return ['allowed' => true, 'remaining' => $limit, 'resetIn' => self::WINDOW_SECONDS];
-    }
-  }
+    $file = $this->storageDir . '/' . md5($key) . '.json';
+    $now = time();
 
-  private function isRedisAvailable(): bool
-  {
-    if ($this->redis === null) {
-      return false;
+    $fp = @fopen($file, 'c+');
+    if (!$fp) {
+      // Fail-open si el filesystem falla
+      return ['allowed' => true];
     }
 
-    try {
-      return @$this->redis->ping();
-    } catch (\Exception $e) {
-      return false;
-    }
-  }
+    flock($fp, LOCK_EX);
 
-  private function ensureRedisConnection(): void
-  {
-    if ($this->redis === null) {
-      return;
-    }
+    rewind($fp);
+    $raw = stream_get_contents($fp);
+    $data = $raw ? json_decode($raw, true) : null;
 
-    try {
-      if (!@$this->redis->ping()) {
-        throw new \Exception("Redis not responding");
-      }
-    } catch (\Exception $e) {
-      $this->redis = null;
-    }
-  }
+    if (
+      !$data ||
+      !isset($data['start'], $data['count']) ||
+      ($now - $data['start']) >= $this->window
+    ) {
+      // Nueva ventana
+      $data = [
+        'start' => $now,
+        'count' => 1
+      ];
+    } else {
+      if ($data['count'] >= $this->limit) {
+        $retryAfter = $this->window - ($now - $data['start']);
+        flock($fp, LOCK_UN);
+        fclose($fp);
 
-  private function checkLimitWithRedis(string $clientIP, int $limit): array
-  {
-    $key = self::RATE_LIMIT_PREFIX . hash('sha256', $clientIP);
-
-    try {
-      // Increment counter
-      $count = $this->redis->incr($key);
-
-      // If first request, set expiration
-      if ($count === 1) {
-        $this->redis->expire($key, self::WINDOW_SECONDS);
-      }
-
-      // If exceeded
-      if ($count > $limit) {
-        $ttl = $this->redis->ttl($key);
         return [
           'allowed' => false,
-          'remaining' => 0,
-          'resetIn' => $ttl > 0 ? $ttl : self::WINDOW_SECONDS
+          'retryAfter' => max(1, $retryAfter)
         ];
       }
 
-      // Allowed
-      $ttl = $this->redis->ttl($key);
-      return [
-        'allowed' => true,
-        'remaining' => $limit - $count,
-        'resetIn' => $ttl > 0 ? $ttl : self::WINDOW_SECONDS
-      ];
-    } catch (\Exception $e) {
-      // On error, fallback to session logic
-      return $this->checkLimitWithSession($clientIP, $limit);
-    }
-  }
-
-  private function checkLimitWithSession(string $clientIP, int $limit): array
-  {
-    $this->initializeSessionSafely();
-
-    $key = self::RATE_LIMIT_PREFIX . hash('sha256', $clientIP);
-    $now = time();
-
-    if (!isset($_SESSION['formpipe_rate_limits'][$key])) {
-      $_SESSION['formpipe_rate_limits'][$key] = ['first_request' => $now, 'count' => 1];
-      return ['allowed' => true, 'remaining' => $limit - 1, 'resetIn' => self::WINDOW_SECONDS];
+      $data['count']++;
     }
 
-    $data = &$_SESSION['formpipe_rate_limits'][$key];
-    $elapsed = $now - $data['first_request'];
+    rewind($fp);
+    ftruncate($fp, 0);
+    fwrite($fp, json_encode($data));
+    fflush($fp);
 
-    if ($elapsed > self::WINDOW_SECONDS) {
-      $data = ['first_request' => $now, 'count' => 1];
-      return ['allowed' => true, 'remaining' => $limit - 1, 'resetIn' => self::WINDOW_SECONDS];
-    }
+    flock($fp, LOCK_UN);
+    fclose($fp);
 
-    if ($data['count'] >= $limit) {
-      return ['allowed' => false, 'remaining' => 0, 'resetIn' => self::WINDOW_SECONDS - $elapsed];
-    }
-
-    $data['count']++;
-    return ['allowed' => true, 'remaining' => $limit - $data['count'], 'resetIn' => self::WINDOW_SECONDS - $elapsed];
-  }
-
-  private function initializeSessionSafely(): void
-  {
-    if (session_status() === PHP_SESSION_NONE) {
-      @session_start();
-    }
-  }
-
-  /**
-   * Closes Redis connection if available
-   */
-  public function closeConnection(): void
-  {
-    if ($this->redis !== null && $this->isRedisAvailable()) {
-      try {
-        @$this->redis->close();
-      } catch (\Exception $e) {
-        // Silence errors when closing
-      }
-    }
+    return ['allowed' => true];
   }
 }

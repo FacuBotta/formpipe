@@ -4,22 +4,15 @@ services:
     volumes:
       - ./:/var/www/html/php
       - ./apache2.conf:/etc/apache2/conf-available/servername.conf
-    command: /bin/bash -c "pecl install redis && docker-php-ext-enable redis; a2enconf servername && apache2-foreground"
+    command: >
+      /bin/bash -c "
+      a2enconf servername &&
+      apache2-foreground
+      "
     ports:
       - '8080:80'
     depends_on:
       - mailpit
-      - redis
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '6379:6379'
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   mailpit:
     image: axllent/mailpit
