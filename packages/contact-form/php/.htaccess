@@ -1,35 +1,14 @@
 # -----------------------------------------
-# Protect .htaccess itself
+# Protect php content folder
 # -----------------------------------------
-<Files ".htaccess">
-  <IfModule mod_authz_core.c>
+
+<FilesMatch ".*">
     Require all denied
-  </IfModule>
-  <IfModule !mod_authz_core.c>
-    Order allow,deny
-    Deny from all
-  </IfModule>
+</FilesMatch>
+
+<Files "contact-form.php">
+    Require all granted
 </Files>
-
-# -----------------------------------------
-# Protect limits directory
-# -----------------------------------------
-<IfModule mod_alias.c>
-  RedirectMatch 403 ^/php/limits/
-</IfModule>
-
-<IfModule mod_authz_core.c>
-  <DirectoryMatch ".*/limits$">
-    Require all denied
-  </DirectoryMatch>
-</IfModule>
-
-<IfModule !mod_authz_core.c>
-  <DirectoryMatch ".*/limits$">
-    Order allow,deny
-    Deny from all
-  </DirectoryMatch>
-</IfModule>
 
 # -----------------------------------------
 # Environment variables
