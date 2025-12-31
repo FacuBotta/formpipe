@@ -1,6 +1,8 @@
 # Environment Variables for Production
 
-This file explains how to use environment variables to securely manage SMTP credentials in production.
+This document explains how to configure environment variables for Formpipe in production environments.
+
+Environment variables are used to securely manage SMTP credentials and runtime configuration without hardcoding sensitive data into your PHP files.
 
 ## Overview
 
@@ -115,27 +117,8 @@ For production:
 3. **Use app-specific passwords** - For Gmail and similar services, use app passwords instead of your main password
 4. **Restrict file permissions** - Ensure `.htaccess` and PHP files have appropriate permissions
 5. **Use HTTPS** - Always use HTTPS in production to encrypt data in transit
+6. **Use Redis for rate limiting** - In production, set up Redis for robust rate limiting across multiple servers
 
-## Testing
+### Disabling Rate Limiting
 
-To test that environment variables are working:
-
-1. Set the environment variables on your server
-2. Submit a test form
-3. Check that emails are sent using the production SMTP settings
-4. Verify the email is received at the `FORMPIPE_TO` address
-
-## Troubleshooting
-
-### Variables Not Being Read
-
-- Verify environment variables are set correctly
-- Check that your web server (Apache/Nginx) is configured to pass environment variables to PHP
-- Use `phpinfo()` to verify environment variables are available to PHP
-- Check PHP error logs for any issues
-
-### Still Using Config Values
-
-- Ensure environment variable names are exactly as listed (case-sensitive)
-- Verify the variables are set before PHP executes
-- Check that `getenv()` is not disabled in your PHP configuration
+If Redis is not available, rate limiting automatically falls back to PHP sessions. For no rate limiting at all, contact your hosting provider or set `rateLimit: 0` in your config (rate limiting will be disabled).

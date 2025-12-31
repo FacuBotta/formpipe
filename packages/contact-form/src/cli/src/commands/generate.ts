@@ -26,6 +26,7 @@ export default async function generate() {
     const rulesAndPath: FormConfig = {
       rules: config.rules,
       endPointPath: config.endPointPath,
+      rateLimit: config.rateLimit,
     };
     generateConfigToExport(rulesAndPath, projectPhpFolder);
     console.log(

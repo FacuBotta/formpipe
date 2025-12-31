@@ -2,11 +2,18 @@
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use Formpipe\ContactForm\FieldValidator;
+use Formpipe\ContactForm\HelperUtilities;
+use Formpipe\ContactForm\RateLimitHandler;
 
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+
+// Load dependencies
+require __DIR__ . "/src/FieldValidator.php";
+require __DIR__ . "/src/HelperUtilities.php";
+require __DIR__ . "/src/RateLimitHandler.php";
+
+// NO establecer headers aquí - los estableceremos después del rate limit check
+// Esto evita problemas cuando necesitamos cambiar el código de respuesta HTTP
 
 // Handle preflight (OPTIONS) request
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
@@ -14,384 +21,185 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
   exit;
 }
 
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+
 $config = null;
 
-/* 
+/*
+----------------------------------------------------
+------------- DEBUG LOGGING SYSTEM ---------------
+----------------------------------------------------
+*/
+function addDebugLog($message, $data = null)
+{
+  global $config;
+  if (!$config['debug']) return;
+
+  $logPath = __DIR__ . '/formpipe.log';
+  $logMessage = "[" . date('Y-m-d H:i:s') . "] " . $message;
+  if ($data !== null) $logMessage .= " | " . json_encode($data);
+  $logMessage .= "\n";
+
+  // Usar file locking para evitar problemas con escrituras concurrentes
+  $fp = @fopen($logPath, 'a');
+  if ($fp !== false) {
+    if (flock($fp, LOCK_EX | LOCK_NB)) {
+      fwrite($fp, $logMessage);
+      fflush($fp);
+      flock($fp, LOCK_UN);
+    }
+    fclose($fp);
+  }
+
+  error_log("[FORMPIPE DEBUG] " . $message . ($data ? " | " . json_encode($data) : ""));
+}
+
+/*
 ----------------------------------------------------
 ---------- LOAD PHPMAILER BASED ON CONFIG ----------
 ----------------------------------------------------
 */
 if ($config['useLocalPhpMailer']) {
-  // Use local PHPMailer from ./PHPMailer/ folder
   require __DIR__ . "/PHPMailer/src/Exception.php";
   require __DIR__ . "/PHPMailer/src/PHPMailer.php";
   require __DIR__ . "/PHPMailer/src/SMTP.php";
 } else {
-  // Use PHPMailer from composer
   require __DIR__ . "/vendor/autoload.php";
 }
 
 /*
 ----------------------------------------------------
----------- RATE LIMITING HELPER FUNCTIONS ----------
+------------------ RATE LIMIT ----------------------
 ----------------------------------------------------
 */
-function getRateLimitFile()
-{
-  $tmpDir = sys_get_temp_dir();
-  $file = $tmpDir . '/formpipe_rate_limit.json';
+addDebugLog("Request received", [
+  'ip' => HelperUtilities::getClientIP()
+]);
 
-  // Verify directory is writable
-  if (!is_writable($tmpDir)) {
-    throw new Exception("Rate limit storage directory is not writable");
-  }
+$rateLimiter = new RateLimitHandler(
+  __DIR__ . '/limits',
+  (int) $config['rateLimit']
+);
 
-  return $file;
+$rateResult = $rateLimiter->check(
+  HelperUtilities::getClientIP()
+);
+
+if (!$rateResult['allowed']) {
+  http_response_code(429);
+  echo json_encode([
+    "success" => false,
+    "error" => "Rate limit exceeded",
+    "retryAfter" => $rateResult['retryAfter']
+  ]);
+  exit;
 }
 
-function getClientIP()
-{
-  // Get client IP with proxy support
-  if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-    $ip = $_SERVER['HTTP_CLIENT_IP'];
-  } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    // Get first IP from forwarded chain
-    $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-    $ip = trim($ips[0]);
-  } else {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-  }
-
-  // Validate IP format (basic check)
-  if (filter_var($ip, FILTER_VALIDATE_IP)) {
-    return $ip;
-  }
-
-  return '0.0.0.0';
-}
-
-function getRateLimitData()
-{
-  try {
-    $file = getRateLimitFile();
-    if (file_exists($file) && filesize($file) > 0) {
-      $content = file_get_contents($file);
-      $data = json_decode($content, true);
-      return is_array($data) ? $data : [];
-    }
-  } catch (Exception $e) {
-    error_log("Rate limit read error: " . $e->getMessage());
-  }
-  return [];
-}
-
-function saveRateLimitData($data)
-{
-  try {
-    $file = getRateLimitFile();
-    $now = time();
-    $cutoff = $now - 180; // clean entries older than 3 minutes
-
-    // Remove stale entries for performance
-    foreach ($data as $ip => $info) {
-      if (isset($info['first_request']) && $info['first_request'] < $cutoff) {
-        unset($data[$ip]);
-      }
-    }
-
-    // Write atomically with lock
-    $tempFile = $file . '.tmp';
-    if (file_put_contents($tempFile, json_encode($data), LOCK_EX) !== false) {
-      rename($tempFile, $file);
-    }
-  } catch (Exception $e) {
-    error_log("Rate limit write error: " . $e->getMessage());
-  }
-}
-
-function checkRateLimit($clientIP, $rateLimitPerMinute)
-{
-  $now = time();
-  $windowSize = 60;
-
-  try {
-    $data = getRateLimitData();
-
-    // Sanitize IP key to prevent injection
-    $key = hash('sha256', $clientIP, false); // Use hash instead of raw IP
-
-    if (!isset($data[$key])) {
-      // First request from this IP
-      $data[$key] = [
-        'first_request' => $now,
-        'count' => 1
-      ];
-      saveRateLimitData($data);
-      return [
-        'allowed' => true,
-        'remaining' => $rateLimitPerMinute - 1,
-        'resetIn' => $windowSize
-      ];
-    }
-
-    $lastData = $data[$key];
-    $timeSinceFirstRequest = $now - $lastData['first_request'];
-
-    if ($timeSinceFirstRequest > $windowSize) {
-      // Window expired, reset counter
-      $data[$key] = [
-        'first_request' => $now,
-        'count' => 1
-      ];
-      saveRateLimitData($data);
-      return [
-        'allowed' => true,
-        'remaining' => $rateLimitPerMinute - 1,
-        'resetIn' => $windowSize
-      ];
-    }
-
-    // We are within the window
-    if ($lastData['count'] >= $rateLimitPerMinute) {
-      // LLimit exceeded
-      $resetIn = $windowSize - $timeSinceFirstRequest;
-      return [
-        'allowed' => false,
-        'remaining' => 0,
-        'resetIn' => max(1, $resetIn)
-      ];
-    }
-
-    $data[$key]['count']++;
-    saveRateLimitData($data);
-    $resetIn = $windowSize - $timeSinceFirstRequest;
-    return [
-      'allowed' => true,
-      'remaining' => $rateLimitPerMinute - $data[$key]['count'],
-      'resetIn' => max(1, $resetIn)
-    ];
-  } catch (Exception $e) {
-    error_log("Rate limit check error: " . $e->getMessage());
-    // Fail open: allow request if rate limit fails (prefer availability)
-    return [
-      'allowed' => true,
-      'remaining' => $rateLimitPerMinute,
-      'resetIn' => $windowSize
-    ];
-  }
-}
-
-/* 
+/*
 ----------------------------------------------------
------------- DETERMINE SMTP SETTINGS ---------------
-----------------------------------------------------
-*/
-// Helper function to determine encryption type based on port
-function getSMTPSecure($port)
-{
-  if ($port === 465) {
-    return PHPMailer::ENCRYPTION_SMTPS;
-  }
-  if ($port === 587) {
-    return PHPMailer::ENCRYPTION_STARTTLS;
-  }
-  return "";
-}
-
-// Helper function to determine if SMTP auth should be used
-function shouldUseSMTPAuth($smtpConfig)
-{
-  if ($smtpConfig["host"] === "mailpit" && $smtpConfig["port"] === 1025) {
-    return false;
-  }
-  return !empty($smtpConfig["user"]) && !empty($smtpConfig["pass"]);
-}
-
-/* 
-----------------------------------------------------
------------------- VALIDATION LOGIC -----------------
+------------------ PROCESS REQUEST -----------------
 ----------------------------------------------------
 */
 
-// Validate phone numbers (replicates isPhone.ts logic)
-function isPhone($value, $mode = 'e164')
-{
-  if (empty($value)) {
-    return false;
-  }
+// Read raw JSON payload (application/json requests do not populate $_POST)
 
-  $normalized = trim($value);
-
-  switch ($mode) {
-    case 'loose':
-      // Allows spaces, '+', parentheses, and hyphens; requires at least 8 digits.
-      return preg_match('/^[\d\s()+-]{8,}$/', $normalized) === 1;
-
-    case 'strict':
-      // Only digits; minimum 8 and maximum 15 characters.
-      return preg_match('/^\d{8,15}$/', $normalized) === 1;
-
-    case 'e164':
-    default:
-      // International E.164 format: optional '+', followed by 8–15 digits, cannot start with 0.
-      return preg_match('/^\+?[1-9]\d{7,14}$/', $normalized) === 1;
-  }
-}
-
-// Validate a field and return array of error messages
-function validateField($field, $value, $rules)
-{
-  $errs = [];
-
-  if (isset($rules["required"]) && $rules["required"] && empty($value)) {
-    $errs[] = ucfirst($field) . " is required";
-  }
-
-  if (!empty($value)) {
-    if (isset($rules["minLength"]) && strlen($value) < $rules["minLength"]) {
-      $errs[] = ucfirst($field) . " is too short (minimum length: " . $rules["minLength"] . ")";
-    }
-
-    if (isset($rules["maxLength"]) && strlen($value) > $rules["maxLength"]) {
-      $errs[] = ucfirst($field) . " is too long (maximum length: " . $rules["maxLength"] . ")";
-    }
-
-    if (isset($rules["isEmail"]) && $rules["isEmail"] && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-      $errs[] = ucfirst($field) . " must be a valid email address";
-    }
-
-    // Validate phone number if phoneValidationMode is set (replicates FormValidator.ts logic)
-    if ($field === "phoneNumber" && isset($rules["phoneValidationMode"])) {
-      $mode = $rules["phoneValidationMode"];
-      if (!isPhone($value, $mode)) {
-        // Set message according to the mode and add an example of a valid phone number
-        switch ($mode) {
-          case 'e164':
-            $errs[] = ucfirst($field) . " must be a valid E.164 phone number (e.g. +1234567890)";
-            break;
-          case 'strict':
-            $errs[] = ucfirst($field) . " must be a valid phone number (8-15 digits)";
-            break;
-          case 'loose':
-            $errs[] = ucfirst($field) . " must be a valid phone number (8+ digits with spaces, +, parentheses, and hyphens)";
-            break;
-        }
-      }
-    }
-  }
-
-  return $errs;
-}
-
-// Get and decode JSON input
 $input = json_decode(file_get_contents("php://input"), true);
 if (!$input) {
   http_response_code(400);
-  exit(json_encode(["success" => false, "error" => "Invalid JSON payload"]));
+  echo json_encode(["success" => false, "error" => "Invalid JSON payload"]);
+  exit;
 }
 
-// Collect all provided values
-$providedValues = [];
-if (isset($input["replyTo"])) {
-  $providedValues["replyTo"] = $input["replyTo"];
-}
-if (isset($input["fields"]) && is_array($input["fields"])) {
-  foreach ($input["fields"] as $field) {
-    if (isset($field["key"]) && isset($field["value"])) {
-      $providedValues[$field["key"]] = $field["value"];
-    }
-  }
-}
-
-// Validate all fields based on rules
-$errors = [];
-$allRules = $config["rules"];
-foreach ($allRules as $field => $rules) {
-  $value = $providedValues[$field] ?? "";
-  $fieldErrors = validateField($field, $value, $rules);
-  foreach ($fieldErrors as $msg) {
-    $errors[] = [
-      "field" => $field,
-      "value" => $value,
-      "rules" => $rules,
-      "message" => $msg
-    ];
-  }
-}
-
-if (!empty($errors)) {
-  http_response_code(400);
-  exit(json_encode(["success" => false, "errors" => $errors]));
-}
-
-// If no errors, proceed to sanitize and build email content
-$validatedFields = [];
-foreach ($allRules as $field => $rules) {
-  $value = trim($providedValues[$field] ?? "");
-  $validatedFields[$field] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-$emailContent = "";
-foreach ($validatedFields as $key => $value) {
-  $emailContent .= "<p><strong>" . ucfirst($key) . ":</strong> " . nl2br($value) . "</p>\n";
-}
-
-/* 
+/*
 ----------------------------------------------------
------------------- SEND EMAIL LOGIC -----------------
+------------------ VALIDATE FIELDS -----------------
 ----------------------------------------------------
 */
 
+// Extract & validate fields
+$provided = [];
+if (isset($input["replyTo"])) $provided["replyTo"] = $input["replyTo"];
+if (isset($input["fields"])) {
+  foreach ($input["fields"] as $f) {
+    if (isset($f["key"], $f["value"])) $provided[$f["key"]] = $f["value"];
+  }
+}
+
+addDebugLog("Fields extracted", ['count' => count($provided)]);
+
+$fieldValidator = new FieldValidator($config['rules']);
+$errors = $fieldValidator->validateAll($provided);
+
+if (!empty($errors)) {
+  http_response_code(400);
+  echo json_encode(["success" => false, "errors" => $errors]);
+  exit;
+}
+
+// Sanitize
+$validated = [];
+foreach ($config['rules'] as $field => $rules) {
+  $validated[$field] = HelperUtilities::sanitizeField($provided[$field] ?? "");
+}
+addDebugLog("Fields sanitized", ['fields' => array_keys($validated)]);
+
+// Send email
 try {
   $mail = new PHPMailer(true);
 
-  // Use environment variables if available, otherwise fall back to config
-  // This allows secure credential management in production
   $smtpHost = getenv('FORMPIPE_SMTP_HOST') ?: $config["smtp"]["host"];
-  $smtpPort = (int)(getenv('FORMPIPE_SMTP_PORT') ?: $config["smtp"]["port"]);
+  $smtpPort = getenv('FORMPIPE_SMTP_PORT') ?: $config["smtp"]["port"];
   $smtpUser = getenv('FORMPIPE_SMTP_USER') ?: $config["smtp"]["user"];
   $smtpPass = getenv('FORMPIPE_SMTP_PASS') ?: $config["smtp"]["pass"];
-  $fromEmail = getenv('FORMPIPE_FROM') ?: $config["from"];
-  $toEmail = getenv('FORMPIPE_TO') ?: $config["to"];
-
-  $smtpConfig = [
-    "host" => $smtpHost,
-    "port" => $smtpPort,
-    "user" => $smtpUser,
-    "pass" => $smtpPass,
-  ];
 
   $mail->isSMTP();
   $mail->Host = $smtpHost;
   $mail->Port = $smtpPort;
-  $mail->SMTPAuth = shouldUseSMTPAuth($smtpConfig);
+  $mail->SMTPAuth = !empty($smtpUser);
   if ($mail->SMTPAuth) {
     $mail->Username = $smtpUser;
     $mail->Password = $smtpPass;
   }
-  $mail->SMTPSecure = getSMTPSecure($smtpPort);
 
-  $mail->setFrom($fromEmail, "Contact Form");
-  $mail->addAddress($toEmail);
-  $replyTo = $validatedFields["replyTo"];
-  $mail->addReplyTo($replyTo);
+  if ($smtpPort == 465) $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+  elseif ($smtpPort == 587) $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+  else $mail->SMTPSecure = false;
 
-  $subject = $validatedFields["subject"];
-
+  $mail->setFrom($config["from"], "Contact Form");
+  $mail->addAddress($config["to"]);
+  $mail->addReplyTo($validated["replyTo"]);
+  $mail->Subject = $validated["subject"];
   $mail->isHTML(true);
-  $mail->Subject = $subject;
-  $mail->Body = "<h2>New Contact Form Submission</h2>\n" . $emailContent;
-  $mail->AltBody = strip_tags($emailContent);
+  $mail->Body = HelperUtilities::buildEmailContent($validated);
+  $mail->AltBody = strip_tags($mail->Body);
 
+  // Asegurar que SMTPKeepAlive esté desactivado para cerrar la conexión después de enviar
+  $mail->SMTPKeepAlive = false;
+
+  addDebugLog("Sending email", ['to' => $config["to"], 'subject' => $validated["subject"]]);
   $mail->send();
+  addDebugLog("Email sent successfully");
 
+  // Cerrar explícitamente la conexión SMTP
+  $mail->smtpClose();
+
+  http_response_code(200);
   echo json_encode([
     "success" => true,
     "message" => "Email sent successfully"
   ]);
+  exit;
 } catch (Exception $e) {
+  addDebugLog("Email sending failed", ['error' => $e->getMessage()]);
+
   http_response_code(500);
   echo json_encode([
     "success" => false,
-    "error" => "Message could not be sent. Mailer Error: " . $e->getMessage()
+    "error" => "Mailer Error: " . $e->getMessage()
   ]);
+  exit;
 }

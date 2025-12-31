@@ -1,0 +1,48 @@
+# -----------------------------------------
+# Protect .htaccess itself
+# -----------------------------------------
+<Files ".htaccess">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</Files>
+
+# -----------------------------------------
+# Protect limits directory
+# -----------------------------------------
+<IfModule mod_alias.c>
+  RedirectMatch 403 ^/php/limits/
+</IfModule>
+
+<IfModule mod_authz_core.c>
+  <DirectoryMatch ".*/limits$">
+    Require all denied
+  </DirectoryMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+  <DirectoryMatch ".*/limits$">
+    Order allow,deny
+    Deny from all
+  </DirectoryMatch>
+</IfModule>
+
+# -----------------------------------------
+# Environment variables
+# -----------------------------------------
+
+SetEnv FORMPIPE_SMTP_HOST "smtp.gmail.com"
+
+SetEnv FORMPIPE_SMTP_PORT "587"
+
+SetEnv FORMPIPE_SMTP_USER ""
+
+SetEnv FORMPIPE_SMTP_PASS ""
+
+SetEnv FORMPIPE_FROM ""
+
+SetEnv FORMPIPE_TO ""

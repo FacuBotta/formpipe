@@ -4,7 +4,11 @@ services:
     volumes:
       - ./:/var/www/html/php
       - ./apache2.conf:/etc/apache2/conf-available/servername.conf
-    command: /bin/bash -c "a2enconf servername && apache2-foreground"
+    command: >
+      /bin/bash -c "
+      a2enconf servername &&
+      apache2-foreground
+      "
     ports:
       - '8080:80'
     depends_on:

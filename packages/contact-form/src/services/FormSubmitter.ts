@@ -32,16 +32,16 @@ export class FormSubmitter {
       let payload: any;
       try {
         payload = await response.json();
-      } catch {
-        return this.errorResponse(
-          response.status,
-          'Invalid JSON response from server',
-          'server',
-          {
-            payload,
-            response,
-          }
-        );
+      } catch (parseError) {
+        const errorMessage = `Invalid JSON response from server: ${
+          parseError instanceof Error ? parseError.message : 'Unknown error'
+        }`;
+        return this.errorResponse(response.status, errorMessage, 'server', {
+          parseError:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+        });
       }
 
       if (!response.ok) {

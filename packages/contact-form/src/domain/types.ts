@@ -79,11 +79,13 @@ export interface FormResponse {
         data?: unknown;
       }>
     | null;
+  debugInfo?: unknown;
 }
 
 export interface FormConfig {
   rules: ValidatorConstraints;
   endPointPath: string;
+  rateLimit: number;
 }
 
 export interface FormMainConfig extends FormConfig {
@@ -96,5 +98,5 @@ export interface FormMainConfig extends FormConfig {
   from: string;
   to: string;
   useLocalPhpMailer: boolean;
-  rateLimit: number;
+  debug: boolean;
 }
